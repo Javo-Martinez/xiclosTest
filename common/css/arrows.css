@@ -1,0 +1,148 @@
+.navigationArrow{
+    background-repeat: no-repeat;
+    position: absolute;
+    z-index: 10000000;
+}
+.navigationArrow:hover{
+    /*opacity: 1;*/
+    background-image: url('../img/arrowRFull.png');
+}
+.arrowL{
+    background-image: url('../img/arrowL.png');
+    width: 100px;
+    height: 100px;
+    float: left;
+    top: 200px;
+    left: 15px;
+}
+
+.arrowL:hover{
+    /*opacity: 1;*/
+    background-image: url('../img/arrowLFull.png');
+}
+
+
+.arrowLchapter{
+    left: -52px;
+    top: 150px;
+    left: -60px;
+}
+
+.arrowR{
+    background-image: url('../img/arrowR.png');
+    background-repeat: no-repeat;
+    width: 60px;
+    height: 100px;
+    float: right;
+    position: absolute;
+    top: 200px;
+    right: -23px;
+}
+.arrowR:hover{
+    /*opacity: 1;*/
+    background-image: url('../img/arrowRFull.png');
+}
+
+.arrowRchapter{
+    left: 1800px;
+    top: 150px;
+}
+
+.arrowT{
+    background-image: url('../img/arrowT.png');
+    background-repeat: no-repeat;
+    width: 100px;
+    height: 37px;
+    position: absolute;
+    top: 31px;
+    right: 870px;
+    z-index: 100000;
+}
+
+.arrowT:hover{
+    /*opacity: 1;*/
+    background-image: url('../img/arrowTFull.png');
+}
+.arrowB{
+    background-image: url('../img/arrowB.png');
+    width: 100px;
+    height: 46px;
+    right: 870px;
+    top: 392px;
+}
+
+.arrowB:hover{
+    /*opacity: 1;*/
+    background-image: url('../img/arrowBFull.png');
+}
+
+#footBlocker{
+    position: absolute;
+    width: 100%;
+    height: 70px;
+    /* background: rgba(0, 0, 0, 0.71); */
+    z-index: 111;
+    bottom: 0;
+    /* opacity: .7; */
+} 
+
+
+
+/**************/
+/* 1280 x 720 */
+/**************/
+ @media only screen and (max-width: 1280px) {
+     
+      .arrowL{
+        top: 100px;
+        /* left: -60px; */
+    }
+
+.arrowLchapter{
+    left: -52px;
+    top: 100px;
+    left: -60px;
+}
+
+
+
+
+.arrowRchapter{
+    left: 1184px;
+}
+     
+     .arrowR{
+        top: 100px;
+        right: -18px;
+    }
+
+
+     
+    .arrowT{
+        top: 0px;
+        left: 620px;
+     }
+
+    .arrowT:hover{
+        /* top: 0px; */
+    }
+     
+     .arrowB{
+        top: 255px;
+        left: 620px;
+        z-index: 1000;
+        right: 50%;
+     }
+
+     .arrowLchapter{
+    left: -52px;
+    top: 100px;
+    left: -60px;
+    }
+
+    .arrowRchapter{
+    left: 1184px;
+    }
+     
+ }
+
