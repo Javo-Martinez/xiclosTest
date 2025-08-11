@@ -163,7 +163,7 @@ function isAlumno(subscriptions) {
                 }
 
                 addMenuItem("buscar", "https://javo-martinez.github.io/xiclosTest/common/img/buscar.png", "Buscar", "search()");
-                addMenuItem("home", "../common/img/home.png", "Inicio", "returnHome()");
+                addMenuItem("home", "./common/img/home.png", "Inicio", "returnHome()");
                 //addMenuItem("favoritos", "../common/img/favoritos.png", "Mis favoritos", "performSearch(0,'bookmark')");
                 addMenuItem("cineclub", "../common/img/cineclub.png", "Cineclub", "getCineclub()");
                 addMenuItem("explorar", "../common/img/explorar.png", "Explorar", "getGenreList()");
@@ -564,4 +564,5 @@ function createLinkPlay(psid) {
     myString = "playProd(" + psid + ")";
     return (myString);
 }
+
 
