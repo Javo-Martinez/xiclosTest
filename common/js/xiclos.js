@@ -141,146 +141,147 @@ function isAlumno(subscriptions) {
     return false;
 }
 
-function getStripsSuccess(resultData, offset) {
-    console.log("START GET STRIPTS", offset, new Date())
+        function getStripsSuccess(resultData, offset) {
+            console.log("START GET STRIPTS", offset, new Date())
 
-    const result = resultData.data
-    ext = result.length + offset;
+            const result = resultData.data
+            ext = result.length + offset;
 
-    if ($("#newMenu").length === 0) {
-        $("#result").after("<div id='newMenu' onmouseover='setMenuFocus()' onmouseout='setMenuFocusOff()'></div>");
+            if ($("#newMenu").length === 0) {
+                $("#result").after("<div id='newMenu' onmouseover='setMenuFocus()' onmouseout='setMenuFocusOff()'></div>");
 
-        function addMenuItem(id, imgSrc, text, onClick) {
-            $('#newMenu').append(`
-                    <img src="${imgSrc}" class="icon" id="${id}" 
-                         onmouseover="menuFocusDelay('${id}')" 
-                         onmouseout="outOfMenuFocus('${id}')" 
-                         onclick="${onClick}" 
-                         style="cursor: pointer;">
-                    <p class="menuTitle">${text}</p>
-            `);
+                function addMenuItem(id, imgSrc, text, onClick) {
+                   $('#newMenu').append(
+                    '<img src="' + imgSrc + '" class="icon" id="' + id + '" ' +
+                    'onmouseover="menuFocusDelay(\'' + id + '\')" ' +
+                    'onmouseout="outOfMenuFocus(\'' + id + '\')" ' +
+                    'onclick="' + onClick + '" ' +
+                    'style="cursor: pointer;">' +
+                    '<p class="menuTitle">' + text + '</p>'
+                );
+                                
+                }
+
+                addMenuItem("buscar", "../common/img/buscar.png", "Buscar", "search()");
+                addMenuItem("home", "../common/img/home.png", "Inicio", "returnHome()");
+                //addMenuItem("favoritos", "../common/img/favoritos.png", "Mis favoritos", "performSearch(0,'bookmark')");
+                addMenuItem("cineclub", "../common/img/cineclub.png", "Cineclub", "getCineclub()");
+                addMenuItem("explorar", "../common/img/explorar.png", "Explorar", "getGenreList()");
+
+                var user = localStorage.getItem("xiclos_sync");
+                user = user && JSON.parse(user);
+
+                if (user && user.User && user.User.subscriptions) {
+                    console.log("USER", user.User.subscriptions[0], isAlumno);
+                    const _isAlumno = isAlumno(user.User.subscriptions);
+                    if (_isAlumno) {
+                        addMenuItem("alumnos", "../common/img/alumnos.png", "Alumnos", "studentsOnly()");
+                    }
+                }
+
+                addMenuItem("salir", "../common/img/salir.png", "Salir", "hideAppConfirm()");
+                addMenuItem("cerrar_sesion", "../common/img/cerrar_sesion.png", "Cerrar sesión", "logoutConfirm()");
+            }
+
+            if ($("#mainContent").length === 0) {
+                $("#result").after("<div id='mainContent'>");
+            }
+
+            if ($("#header").length == 0) {
+                $("#mainContent").append("<div id='header'>");
+            }
+            if ($("#grid").length == 0) {
+                $("#mainContent").append("<div id='grid'>");
+            }
+
+            localStorage.setItem("published_strips", ext);
+            /*    if(offset==0){
+                    setArrows();
+                }
+            */
+            //setStripStructure();
+            var myEndRow = 0;
+            for (i = offset; i < ext; i++) {
+                var sl = result[i - offset]
+
+                $("#grid").append("<div id='gridContent" + i + "' class='gridContent' sortId=" + i + ">");
+                $("#gridContent" + i).append("<div id='headlineButton' class='verticalRectangle'></div>");
+                $("#gridContent" + i).append("<div id='stripTitle' class='stripTitle'>" + sl.tira);
+                $("#gridContent" + i).append("<div id='content" + i + "' class='content' sortId=" + i + ">");
+                //RECORRO DETALLES
+                var detailLength = sl.detalle.length;
+                var firstElement = "";
+                var lastElement = "";
+
+                for (j = 0; j < detailLength; j++) {
+
+                    myEndRow++;
+
+                    if (j == 0) {
+                        firstElement = 'firstElement';
+                    } else if (j == detailLength - 1 && j != 0) {
+                        lastElement = 'lastElement';
+                    } else {
+                        firstElement = '';
+                        lastElement = '';
+                    }
+
+                    if (j == 0 && i == 0) {
+                        var onFocus = 'onFocus';
+                    } else {
+                        onFocus = '';
+                    }
+
+                    $("#content" + i).append("<div id='box" + myEndRow + i + j + "' class='box " + firstElement + " " + lastElement + " " + onFocus + "' prodId='" + sl.detalle[j].movieId + "' mediaId='" + sl.detalle[j].mediaId + "' pindex='" + i + "'  onmouseover='focusDelay(\"" + 'box' + myEndRow + i + j + "\")' onmouseout='outOfFocus(\"" + 'box' + myEndRow + i + j + "\")'>");
+                    $("#box" + myEndRow + i + j).append("<img id='img" + myEndRow + i + j + "' class='poster' src='" + sl.detalle[j].poster + "'>");
+                    $("#box" + myEndRow + i + j).append("<div class='posterTitle'>" + sl.detalle[j].title + "</div>")
+
+                    $("#header").append("<div id='prodDetails" + myEndRow + i + j + "' class='prodDetails'>");
+                    //$("#prodDetails" + myEndRow + i).append("<div class='trapezium2'></div>");
+                    //$("#prodDetails" + myEndRow + i).append("<img id='prodPoster"+myEndRow + i+"'class='prodPoster' src='"+getPathDomain()+sl.detalle[j].poster.replace('-205x347','')+"'></img>")
+                    $("#prodDetails" + myEndRow + i + j).append("<div id='detailsContainer" + myEndRow + i + j + "' class='detailsContainer'></div>'");
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodTitle'>" + sl.detalle[j].title + "</div>")
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodSinopsis'>" + sl.detalle[j].sinopsis + "</div>")
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>" + sl.detalle[j].audience + "</div>")
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDuration'>" + sl.detalle[j].duration + " minutos</div>")
+                    // $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>"+sl.detalle[j].language.replace('"','') +"</div>")
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodYear'>" + sl.detalle[j].year + "</div>")
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodIMDB highlight'>IMDB: " + sl.detalle[j].imdb + "</div>")
+                    $("#detailsContainer" + myEndRow + i + j).append("<div style='clear:both'><br />");
+
+                    if (sl.detalle[j].genres.length !== 0) {
+                        var genres = String(sl.detalle[j].genres);
+                        genres = genres.replace(/,/g, ", ");
+                        $("#detailsContainer" + myEndRow + i + j).append("<div class='prodGenres'><span class='highlight'>Géneros:</span> " + genres + "</div>")
+                    }
+
+                    var director = String(sl.detalle[j].director);
+                    director = director.replace(/,/g, ", ");
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDirector'><span class='highlight'>Director:</span> " + director + "</div>")
+
+                    var actors = String(sl.detalle[j].actors);
+                    actors = actors.replace(/,/g, ", ");
+                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodActors'><span class='highlight'>Elenco:</span> " + actors + "</div> <br />")
+
+                    if (j == 0 && i == 0) {
+                        showProdDetails();
+
+                    }
+
+                }
+
+            }
+            console.log("OFFSET", offset)
+            if (offset == 0) {
+
+                setTimeout(function() {
+                  unsetLoader()
+                }, 5000);
+            }
+
+            console.log("END GET STRIPTS", offset, new Date())
+
         }
-
-        addMenuItem("buscar", "../common/img/buscar.png", "Buscar", "search()");
-        addMenuItem("home", "../common/img/home.png", "Inicio", "returnHome()");
-        //addMenuItem("favoritos", "../common/img/favoritos.png", "Mis favoritos", "performSearch(0,'bookmark')");
-        addMenuItem("cineclub", "../common/img/cineclub.png", "Cineclub", "getCineclub()");
-        addMenuItem("explorar", "../common/img/explorar.png", "Explorar", "getGenreList()");
-
-        var user = localStorage.getItem("xiclos_sync");
-        user = user && JSON.parse(user);
-
-        if (user && user.User && user.User.subscriptions) {
-            console.log("USER", user.User.subscriptions[0], isAlumno);
-            const _isAlumno = isAlumno(user.User.subscriptions);
-            if (_isAlumno) {
-                addMenuItem("alumnos", "../common/img/alumnos.png", "Alumnos", "studentsOnly()");
-            }
-        }
-
-        addMenuItem("salir", "../common/img/salir.png", "Salir", "hideAppConfirm()");
-        addMenuItem("cerrar_sesion", "../common/img/cerrar_sesion.png", "Cerrar sesión", "logoutConfirm()");
-    }
-
-    if ($("#mainContent").length === 0) {
-        $("#result").after("<div id='mainContent'>");
-    }
-
-    if ($("#header").length == 0) {
-        $("#mainContent").append("<div id='header'>");
-    }
-    if ($("#grid").length == 0) {
-        $("#mainContent").append("<div id='grid'>");
-    }
-
-    localStorage.setItem("published_strips", ext);
-    /*    if(offset==0){
-            setArrows();
-        }
-    */
-    //setStripStructure();
-    var myEndRow = 0;
-    for (i = offset; i < ext; i++) {
-        var sl = result[i - offset]
-
-        $("#grid").append("<div id='gridContent" + i + "' class='gridContent' sortId=" + i + ">");
-        $("#gridContent" + i).append("<div id='headlineButton' class='verticalRectangle'></div>");
-        $("#gridContent" + i).append("<div id='stripTitle' class='stripTitle'>" + sl.tira);
-        $("#gridContent" + i).append("<div id='content" + i + "' class='content' sortId=" + i + ">");
-        //RECORRO DETALLES
-        var detailLength = sl.detalle.length;
-        var firstElement = "";
-        var lastElement = "";
-
-        for (j = 0; j < detailLength; j++) {
-
-            myEndRow++;
-
-            if (j == 0) {
-                firstElement = 'firstElement';
-            } else if (j == detailLength - 1 && j != 0) {
-                lastElement = 'lastElement';
-            } else {
-                firstElement = '';
-                lastElement = '';
-            }
-
-            if (j == 0 && i == 0) {
-                var onFocus = 'onFocus';
-            } else {
-                onFocus = '';
-            }
-
-            $("#content" + i).append("<div id='box" + myEndRow + i + j + "' class='box " + firstElement + " " + lastElement + " " + onFocus + "' prodId='" + sl.detalle[j].movieId + "' mediaId='" + sl.detalle[j].mediaId + "' pindex='" + i + "'  onmouseover='focusDelay(\"" + 'box' + myEndRow + i + j + "\")' onmouseout='outOfFocus(\"" + 'box' + myEndRow + i + j + "\")'>");
-            $("#box" + myEndRow + i + j).append("<img id='img" + myEndRow + i + j + "' class='poster' src='" + sl.detalle[j].poster + "'>");
-            $("#box" + myEndRow + i + j).append("<div class='posterTitle'>" + sl.detalle[j].title + "</div>")
-
-            $("#header").append("<div id='prodDetails" + myEndRow + i + j + "' class='prodDetails'>");
-            //$("#prodDetails" + myEndRow + i).append("<div class='trapezium2'></div>");
-            //$("#prodDetails" + myEndRow + i).append("<img id='prodPoster"+myEndRow + i+"'class='prodPoster' src='"+getPathDomain()+sl.detalle[j].poster.replace('-205x347','')+"'></img>")
-            $("#prodDetails" + myEndRow + i + j).append("<div id='detailsContainer" + myEndRow + i + j + "' class='detailsContainer'></div>'");
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodTitle'>" + sl.detalle[j].title + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodSinopsis'>" + sl.detalle[j].sinopsis + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>" + sl.detalle[j].audience + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDuration'>" + sl.detalle[j].duration + " minutos</div>")
-            // $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>"+sl.detalle[j].language.replace('"','') +"</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodYear'>" + sl.detalle[j].year + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodIMDB highlight'>IMDB: " + sl.detalle[j].imdb + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div style='clear:both'><br />");
-
-            if (sl.detalle[j].genres.length !== 0) {
-                var genres = String(sl.detalle[j].genres);
-                genres = genres.replace(/,/g, ", ");
-                $("#detailsContainer" + myEndRow + i + j).append("<div class='prodGenres'><span class='highlight'>Géneros:</span> " + genres + "</div>")
-            }
-
-            var director = String(sl.detalle[j].director);
-            director = director.replace(/,/g, ", ");
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDirector'><span class='highlight'>Director:</span> " + director + "</div>")
-
-            var actors = String(sl.detalle[j].actors);
-            actors = actors.replace(/,/g, ", ");
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodActors'><span class='highlight'>Elenco:</span> " + actors + "</div> <br />")
-
-            if (j == 0 && i == 0) {
-                showProdDetails();
-
-            }
-
-        }
-
-    }
-    console.log("OFFSET", offset)
-    if (offset == 0) {
-
-        setTimeout(function() {
-          unsetLoader()
-        }, 5000);
-    }
-
-    console.log("END GET STRIPTS", offset, new Date())
-
-}
 
 function getStrips() {
     setLoader();
