@@ -1,24 +1,24 @@
 .stripTitle{
-     margin-top: 29px;
+     /* margin-top: 29px; */
      position: relative;
-     /* margin-left: 1295px; */
+     margin-left: 40px;
      /* text-align: right; */
-     /* width: 576px; */
-     padding-left: 75px;
-     background: rgba(212, 212, 212, 0.77);
+     width: 75%;
+     /* padding-left: 75px; */
+     /* background: rgba(212, 212, 212, 0.77); */
      padding-top: 5px;
      padding-bottom: 5px;
-     background: url('../img/titleBackground.png');
-     background-repeat: repeat-y;
+     /* background: url('../img/titleBackground.png'); */
+     /* background-repeat: repeat-y; */
+     font-size: 26px;
+     /* font-weight: 600; */
+     color: #FFFFFF;
 }
- .box, .menu, .explore{
-    /* height: 257px;
-     width: 185px;
-    */
+.box, .menu, .explore {
     float: left;
     /* opacity: .8; */
-    height: 419px;
-    width: 200px;
+    height: 348px !important;
+    width: 240px !important;
     /* margin-right: -1px; */
 }
 
