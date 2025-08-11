@@ -1,8 +1,8 @@
  .content {
      margin: auto;
-     margin-top: 50px;
-     margin-left: 75px;
-     width: 100%;
+     margin-top: 29px;
+     margin-left: 44px;
+     width: max-content;
 }
 
  #contentMenu{
@@ -29,7 +29,7 @@
  .left{
      float: left;
 }
- .box.onFocus .poster, .chapter.onFocus{/* box-shadow: 6px 10px 5px 0px #eb564a; */outline: solid 4px #eb564a;transform: scale(1.2);}
+ .box.onFocus .poster, .chapter.onFocus{/* box-shadow: 6px 10px 5px 0px #eb564a; */outline: solid 4px #eb564a;}
 
 .box.onFocus .poster.estrenos{
 
@@ -44,21 +44,24 @@ outline: solid 3px #009D72;
 outline: solid 3px #009D72;
 }
 
- .poster, .posterTitle {
-     z-index: 20;
-     margin-top: 10px;
-     width: 75%;
-     /* margin-left: 6px; */
+.poster, .posterTitle {
+    z-index: 20;
+    margin-top: -10px;
+    width: 217px;
+    /* margin-left: 6px; */
+    height: 307px;
 }
+
  .posterTitle{
      min-height: 123px;
      text-align: center;
      padding-top: 10px;
-     text-transform: uppercase;
+     /* text-transform: uppercase; */
      font-size: 15px;
-     font-weight: bold;
+     /* font-weight: bold; */
      /* margin-top: 16%; */
-     display: none;
+     /* display: none; */
+     font-family: Roboto;
 }
  .onFocus .boxContent{
      /* margin-left: 361px; */
@@ -121,6 +124,7 @@ outline: solid 3px #009D72;
     position: absolute;
     z-index: 10000000;
     opacity: .5;
+    visibility: hidden;
 }
 
 .navigationArrow:hover{
