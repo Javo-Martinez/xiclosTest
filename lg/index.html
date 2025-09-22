@@ -11,6 +11,25 @@
     <script type="text/javascript" src="../common/js/login.js"></script>
     <script type="text/javascript" src="../webos/js/webos.js"></script>
     <script type="text/javascript" src="../webos/js/webOSPlatform.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const screenW = screen.width;
+      const screenH = screen.height;
+      const innerW = window.innerWidth;
+      const innerH = window.innerHeight;
+
+      if (innerW < screenW || innerH < screenH) {
+        const scaleX = screenW / innerW;
+        const scaleY = screenH / innerH;
+
+        document.body.style.transform = `scale(${scaleX}, ${scaleY})`;
+        document.body.style.transformOrigin = 'top left';
+        document.body.style.width = `${innerW}px`;
+        document.body.style.height = `${innerH}px`;
+        document.body.style.overflow = 'hidden';
+      }
+    });
+  </script>
 </head>
 
 <body onload="checkLogin();">
@@ -42,5 +61,6 @@
 </body>
 
 </html>
+
 
 </html>
