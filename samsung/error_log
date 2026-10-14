@@ -1,6 +1,0 @@
-[09-Apr-2019 14:05:08 UTC] PHP Notice:  Undefined variable: Ipr in /home/xiclos/public_html/tv/samsung/ConnectPOC.php on line 27
-[09-Apr-2019 14:05:08 UTC] PHP Notice:  Undefined variable: Hv in /home/xiclos/public_html/tv/samsung/ConnectPOC.php on line 27
-[09-Apr-2019 14:05:08 UTC] PHP Notice:  crypt(): No salt parameter was specified. You must use a randomly generated salt and a strong hash function to produce a secure hash. in /home/xiclos/public_html/tv/samsung/ConnectPOC.php on line 41
-[09-Apr-2019 14:05:08 UTC] PHP Notice:  crypt(): No salt parameter was specified. You must use a randomly generated salt and a strong hash function to produce a secure hash. in /home/xiclos/public_html/tv/samsung/ConnectPOC.php on line 47
-[09-Apr-2019 14:05:08 UTC] PHP Notice:  crypt(): No salt parameter was specified. You must use a randomly generated salt and a strong hash function to produce a secure hash. in /home/xiclos/public_html/tv/samsung/ConnectPOC.php on line 56
-[09-Apr-2019 14:05:08 UTC] PHP Notice:  crypt(): No salt parameter was specified. You must use a randomly generated salt and a strong hash function to produce a secure hash. in /home/xiclos/public_html/tv/samsung/ConnectPOC.php on line 62

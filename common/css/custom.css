@@ -11,23 +11,6 @@ body {
   font-family: player;
   src: url(fonts/jw-icons.woff);
 }
-/*
- @font-face {
-	font-family: "Roboto";
-     font-style: normal;
-     font-weight: 700;
-     src: url("Brandon_bld.eot"), url("Brandon_bld.eot?#iefix") format("embedded-opentype"), url("Brandon_bld.woff") format("woff"), url("Brandon_bld.ttf") format("truetype"), url("Brandon_bld.otf") format("opentype");
-}
- @font-face {
-     font-family: "Roboto";
-     font-style: normal;
-     src: url("Brandon_light.eot"), url("Brandon_light.eot?#iefix") format("embedded-opentype"), url("Brandon_light.woff") format("woff"), url("Brandon_light.ttf") format("truetype"), url("Brandon_light.otf") format("opentype");
-}
-*/
-/* 
- iframe.jw-logo.jw-logo-top-right.jw-hide.jw-reset{
-     display:none;
-} */
 
 #debugMode {
   top: 0;
@@ -304,11 +287,13 @@ input[type="button"] {
   z-index: 0;
 }
 .gridContent {
-  /* margin-left: 150px; */
-  height: 492px;
-  /* width: 73%; */
-  overflow: hidden;
-  width: 1921px;
+    /* margin-left: 150px; */
+    height: 420px;
+    /* width: 73%; */
+    /* overflow: hidden; */
+    /* width: 1921px; */
+    margin-left: 80px;
+    min-width: 1920px;
 }
 .gridContent.dummy {
   margin-left: -69px;
@@ -367,7 +352,7 @@ input[type="button"] {
   position: relative;
   width: 100%;
   height: 572px;
-  background: url("../img/background.png");
+  background: url("https://xiclos.com/tv/common/img/background.png");
   background-repeat: repeat-x;
   top: 530px;
   z-index: 5;
@@ -410,8 +395,7 @@ li {
   cursor: pointer;
 }
 #content {
-  width: 1920px;
-
+  /* width: 1920px; */
   text-align: left;
   background: none;
 }
@@ -871,8 +855,8 @@ li {
 }
 
 .modalAnimation {
-  background: #231f20 url("../img/logo.png") 50% 50% no-repeat;
-  /*     animation: fadeinout 5s ease 1s  infinite;
+  /*background: #231f20 url("../img/logo.png") 50% 50% no-repeat;
+       animation: fadeinout 5s ease 1s  infinite;
      opacity: 0;*/
   z-index: 500 !important;
 }
@@ -913,7 +897,7 @@ li {
   margin-top: 25%;
   color: #fff;
   font-size: 40px;
-  animation: fadeinout 2s ease 1s infinite;
+  animation: fadeinout 2s linear 2s infinite;
   opacity: 1;
 }
 
@@ -1026,12 +1010,117 @@ li {
   margin-left: 0;
   z-index: 6;
   /* background: rgba(0, 0, 0, 0.6); */
-  overflow: hidden;
+  /* overflow: hidden; */
   /* width: 94%; */
-  top: 590px;
-  background: url("../img/stripBackground.png");
+  top: 581px;
+  background: url("https://xiclos.com/tv/common/img/stripBackground.png");
+  min-height: 503px;
 }
 
+#newMenu {
+    width: 120px;
+    height: 1080px;
+    position: absolute;
+    top: -20px;
+    background-color: black;
+    background: linear-gradient(to right, #000000d6 85%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 11px;
+    z-index: 9;
+}
+
+.newMenuActive{
+  width: 400px !important;
+  /* background: linear-gradient(to right, #000000ed 85%, transparent 100%) !important; */
+  /* display: flex; */
+  flex-direction: column;
+  /* align-items: center; */
+}
+/*
+.newMenuActive .icon, .newMenuActive .menuTitle{
+  margin-left: -55px !important;
+}
+
+*/
+
+.menuTitle {
+  font-size: 18px;
+  display: none;
+}
+
+.icon {
+        width: 28px;
+        height: 28px;
+        margin-top: 20px;
+        position: static;
+        margin-left: 40px;
+    }
+
+.icon.onFocus {
+  background-color: #eb564a;
+  
+  /*border-bottom: 3px solid red;*/
+  border-radius: 15%;
+  padding: 5px;
+  /*margin-left:45px;*/
+    margin-top: 10px;
+    margin-left: 45px;
+}
+
+
+/* Contenedor del menÃº */
+#newMenu {
+  width: 120px;
+  height: 1080px;
+  position: absolute;
+  /* top: 10px; */
+  background: linear-gradient(to right, #000000d6 85%, transparent 100%);
+  display: grid;
+}
+
+/* Cuando el menÃº estÃ¡ expandido */
+.newMenuActive {
+  /* width: 1000px !important; */
+  background: linear-gradient(to right, #000000ed 85%, transparent 100%) !important;
+  /*align-items: flex-start; /* Alinea a la izquierda para que texto quede al lado del icono */
+  /*padding-left: 20px;*/
+  margin-top: 20px;
+}
+
+
+
+/* Contenedor de cada Ã­tem */
+.menuItemContainer {
+  display: flex;
+  align-items: center;
+  margin-top: 70px;
+  /*gap: 10px;*/
+}
+
+/* Ãcono */
+.icon {
+  /* width: 28px; */
+  /* height: 28px; */
+  /* margin-left: 55px; */
+}
+
+/* Texto oculto por defecto */
+.menuTitle {
+  font-size: 18px;
+  color: white;
+  display: none;
+  margin-left: 135px;
+  margin-top: -28.4%;
+}
+/* Solo se muestra el texto si el menÃº estÃ¡ expandido */
+/*
+.newMenuActive .menuTitle {
+  display: block;
+}
+
+*/
 .prodTitle {
   font-size: 55px;
   font-family: Roboto;
@@ -1041,6 +1130,10 @@ li {
   /* text-shadow: 4px 1px 15px #000, 6px 2px 20px #000, 8px 3px 20px #000, 10px 4px 25px #000, 12px 5px 30px #000; */
   text-transform: uppercase;
   width: 1300px;
+}
+.menuTitle {
+  color: #ffffff;
+  /* margin: 0; */
 }
 
 .triangle {
@@ -1125,7 +1218,7 @@ li {
 }
 
 #result img {
-  height: 130px;
+  height: 93px;
 }
 
 #mainContainer {
@@ -1140,6 +1233,7 @@ li {
 .prodDetails {
   display: none;
   margin-top: 80px;
+  margin-left: 40px;
 }
 
 .prodPoster {
@@ -1194,14 +1288,20 @@ li {
 }
 
 .searchTerms {
-  color: #000000;
+  color: #e65448;
+  font-weight: bold;
 }
 
 .prodSinopsis {
-  width: 1250px;
+  width: 1380px;
   margin-bottom: 38px;
   font-size: 25px;
-  min-height: 120px;
+  display: -webkit-box;
+  -webkit-line-clamp: 5; /* Ajusta segÃºn el tamaÃ±o del texto */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .detailsContainer {
@@ -1209,7 +1309,7 @@ li {
   width: 900px;
   float: left;
   position: absolute;
-  margin-left: 52px;
+  margin-left: 60px;
   font-size: 22px;
   top: 74px;
   color: white;
@@ -1267,6 +1367,31 @@ li {
     background: #00dde4;
     color: #000000;
   }
+
+  #newMenu {
+    width: 120px;
+    height: 720px;
+    position: absolute;
+    /* top: 10px; */
+    background: linear-gradient(to right, #000000d6 85%, transparent 100%);
+    display: grid;
+    }
+  .menuTitle {
+    font-size: 17px;
+    color: white;
+    display: none;
+    margin-left: 110px;
+    margin-top: -18.5%;
+  }
+.icon.onFocus {
+    background-color: #eb564a;
+    /* border-bottom: 3px solid red; */
+    border-radius: 15%;
+    padding: 5px;
+    /* margin-left: 45px; */
+    margin-top: 10px;
+    margin-left: 35px;
+}
   #results,
   #loginzone {
     width: 1280px !important;
@@ -1400,7 +1525,7 @@ li {
     width: 900px;
     float: left;
     position: absolute;
-    margin-left: 29px;
+    margin-left: 64px;
     font-size: 18px;
     top: 30px;
   }
@@ -1486,7 +1611,7 @@ li {
     position: fixed;
     overflow: hidden;
     width: 1280px;
-    top: 55%;
+    top: 50%;
     /* margin-left: -73px;
          */
     /* background: black; */
@@ -1743,12 +1868,13 @@ li {
     border-bottom: solid 1px #00dce4;
   }
   .gridContent {
-    /* margin-left: 62px; */
-    height: 310px;
+    /* margin-left: 60px; */
+    height: 295px;
     width: 1240px;
     overflow: hidden;
-    margin-top: 10px;
+    margin-top: 9px;
     /* padding-left: 7px; */
+    margin-left: 60px;
   }
   .gridContent.dummy {
     margin-left: -69px;
@@ -1917,7 +2043,7 @@ li {
     position: relative;
     width: 100%;
     height: 572px;
-    background: url("../img/background.png");
+    background: url("https://xiclos.com/tv/common/img/background.png");
     background-repeat: repeat-x;
     top: 333px;
   }

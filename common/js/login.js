@@ -29,7 +29,7 @@ function logout(hide) {
 }
 
 //Chequea si el usuario está logueado
-function checkLogin() {
+function initXiclosTV() {
   try {
     setLoader();
     $.getScript("https://cdn.jwplayer.com/libraries/uAC0h9eo.js");

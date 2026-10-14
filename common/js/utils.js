@@ -34,61 +34,90 @@ function setOnOff(msg) {
 }
 
 function setFocus() {
-  curLevel = level.NONE;
+  curLevel = level.NONE;    
   var myID = $(".onFocus").attr("id");
   var currentID = $(".onFocus").attr("prodid");
 
   $(".onFocus").removeClass("onFocus");
+  $(".activeContent").addClass("onFocus");
+
+
+
+  /*
   $(".content:first").find(".box:eq( 0 )").addClass("onFocus");
   $(".content:first").find(".box:eq( 0 )").addClass("activeContent");
+  */
 
   showProdDetails();
 
-  $("#" + myID).attr("onclick", "setPlayFocus()");
+  if (!$("#" + myID).hasClass('icon')) {
+    $("#" + myID).attr("onclick", "setPlayFocus()");
+  }
 
+  curLevel = level.BODY;
+}
+
+
+function setFocusFirstElement(){
+
+  $(".content:first").find(".box:eq( 0 )").addClass("onFocus");
+  $(".content:first").find(".box:eq( 0 )").addClass("activeContent");
+  showProdDetails();
   curLevel = level.BODY;
 }
 
 function setMenuFocus() {
-  curLevel = level.NONE;
-  $(".prodDetails").css("display", "none");
-  $("#grid").css("display", "block");
+
+  curLevel = level.MENU;
+
+  //Obtengo el ID del proDetails de la película que está visible para seguir mostrando los detalles
+  var visibleDiv = $(".prodDetails").filter(function() {
+    return $(this).css("display") === "block";
+  });
+  let prodDetailID = visibleDiv.attr("id");
+  $("#" + prodDetailID).css("display", "block");
+
+  //Asigno clase para expandir el menú
+  $("#newMenu").addClass("newMenuActive");
+
+
+  //FOCO en el primer elemento del menú
   $(".onFocus").removeClass("onFocus");
-  $(".menu:first").addClass("onFocus");
-  var clickParam = $(".onFocus").attr("clickparam");
-  $(".onFocus").attr("onclick", clickParam);
+  $("#div_vimeo_player").css("display", "block");
+  $("#newMenu .icon:first-of-type").addClass("onFocus");
+  $(".menuTitle").css("display", "block");
+}
+
+function setMenuFocusOff() {
+
+  //Remuevo clase para expandir el menú
+  $("#newMenu").removeClass("newMenuActive");
+  $(".menuTitle").css("display", "none");
   curLevel = level.BODY;
+  setFocus();
 }
 
 function setFocusOn() {
+
   var $checkFirstStrip = $(".gridContent:first");
 
   if ($checkFirstStrip.hasClass("menuStrip")) {
     setMenuFocus();
-    if ($(".content:first .menu").length <= 9) {
-      hideLeftRigthArrow();
-    } else {
-      showLeftRigthArrow();
-    }
   } else {
     setFocus();
-    if ($(".content:first .box").length <= 9) {
-      hideLeftRigthArrow();
-    } else {
-      showLeftRigthArrow();
-    }
   }
 }
 
 function setPlayFocus() {
   curLevel = level.NONE;
-
+  /*
   phasChapters = $(".onFocus").attr("prodType");
   if (phasChapters == "") {
     phasChapters = $(".activeContent").attr("prodType");
   }
+  */
   psid = $(".onFocus").attr("prodid");
-  console.log("phasChapters: " + phasChapters);
+  //console.log("phasChapters: " + phasChapters);
   localStorage.setItem("detailedproduction", JSON.stringify(psid));
 
   $(".onFocus").removeClass("onFocus");
@@ -140,7 +169,7 @@ function hideAppConfirm() {
 }
 
 function logoutConfirm() {
-  showLogoutConfirm("¿Realmente querés cerrar tu sesión en Xiclos?", "BODY");
+  showLogoutConfirm("¿Realmente querés cerrar tu sesión en Xiclos? Si cerrás tu sesión deberás volver a sincronizar tu dispositivo para disfrutar Xiclos nuevamente.", "BODY");
 }
 
 function closeConfirm() {
@@ -166,7 +195,7 @@ function setAction(pvideoId, pprodid, rowid) {
     dataType: "json",
     type: "GET",
     cache: false,
-    success: function (resultData) {
+    success: function(resultData) {
       const result = resultData.data;
       $(".onFocus").addClass("activeContent");
       $(".onFocus").removeClass("onFocus");
@@ -192,25 +221,28 @@ function setAction(pvideoId, pprodid, rowid) {
       $("#confirm").append('<p class= "moviename">' + pmoviename);
       $("#confirm").append(
         "<button id='playMovie' class='confirmField bookmarkButton onFocus' onmouseenter='confirmFocus()' onclick='createPlayer(\"" +
-          pvideoId +
-          '",' +
-          pprodid +
-          ")';>VER AHORA "
+        pvideoId +
+        '",' +
+        pprodid +
+        ")';>VER AHORA "
       );
       $("#confirm").append(
         "<button id='manageBookmark' class='confirmField bookmarkButton " +
-          bookmarked +
-          "' onmouseenter='confirmFocus()' onclick='manageBookmark(" +
-          pprodid +
-          ',"' +
-          rowid +
-          "\")';>" +
-          ptitle +
-          ""
+        bookmarked +
+        "' onmouseenter='confirmFocus()' onclick='manageBookmark(" +
+        pprodid +
+        ',"' +
+        rowid +
+        "\")';>" +
+        ptitle +
+        ""
       );
-      unsetLoader();
+      setTimeout(function() {
+
+          unsetLoader();
+            }, 3000);
     },
-    error: function (response) {
+    error: function(response) {
       console.log("ERROR setAction", response);
       unsetLoader();
     }
@@ -233,7 +265,7 @@ function getGenreList() {
     dataType: "json",
     type: "GET",
     cache: false,
-    success: function (resultData) {
+    success: function(resultData) {
       const result = resultData.data;
       var resultLength = result.length;
       console.log("getGenreList result", result);
@@ -263,23 +295,23 @@ function getGenreList() {
 
         $("#confirm").append(
           "<button id='playMovie' class='confirmField " +
-            classOnFocus +
-            " genreList' onmouseenter='confirmFocus()' onclick=performSearch(" +
-            result[i].genreId +
-            ",'genre','" +
-            encodeURI(myGenre) +
-            "');>" +
-            result[i].genre.toUpperCase() +
-            ""
+          classOnFocus +
+          " genreList' onmouseenter='confirmFocus()' onclick=performSearch(" +
+          result[i].genreId +
+          ",'genre','" +
+          encodeURI(myGenre) +
+          "');>" +
+          result[i].genre.toUpperCase() +
+          ""
         );
       }
     },
-    error: function (response) {
+    error: function(response) {
       console.log("ERROR getGenreList:", response);
     }
   });
 
-  setTimeout(function () {
+  setTimeout(function() {
     unsetLoader();
   }, 3000);
 }
@@ -347,8 +379,8 @@ function customMessage(pmessage) {
   curLevel = level.NONE;
   $("body").append(
     "<div id='modalMessage' class='simpleModal'> <p class='customMessage'>" +
-      pmessage +
-      " </p>"
+    pmessage +
+    " </p>"
   );
   $("#modalMessage").fadeOut(5000);
   setTimeout(setLevel, 5000);
@@ -369,49 +401,9 @@ function closeModal() {
 }
 
 function closeModalDelay() {
-  setTimeout(function () {
+  setTimeout(function() {
     closeModal();
   }, 3000);
-}
-
-function setArrows() {
-  //Left Arrow
-  if ($(".arrowL").length == 0) {
-    $("#grid").append(
-      "<div id='arrowL' class= 'navigationArrow arrowL' onclick= 'moveToLeft()'>"
-    );
-  }
-
-  //Right Arrow
-  if ($(".arrowR").length == 0) {
-    $("#grid").append(
-      "<div id='arrowR' class= 'navigationArrow arrowR' onclick= 'moveToRight()'>"
-    );
-  }
-
-  //Top Arrow
-  if ($(".arrowT").length == 0) {
-    $("#grid").append(
-      "<div id='arrowT' class= 'navigationArrow arrowT' onclick= 'moveToUp()'>"
-    );
-  }
-
-  //Bottom Arrow
-  if ($(".arrowB").length == 0) {
-    $("#grid").append(
-      "<div id='arrowB' class= 'navigationArrow arrowB' onclick= 'moveToDown()'>"
-    );
-  }
-}
-
-function hideLeftRigthArrow() {
-  $(".arrowL").hide();
-  $(".arrowR").hide();
-}
-
-function showLeftRigthArrow() {
-  $(".arrowL").show();
-  $(".arrowR").show();
 }
 
 function setLoader() {
@@ -419,15 +411,15 @@ function setLoader() {
     $("body").append("<div id='modal' class='modal modalAnimation'>");
     $("#modal").append(
       "<div class='loading'><img src='" +
-        getPathDomain() +
-        "/tv/common/img/logo.png'></div>"
+      getPathDomain() +
+      "/tv/common/img/logo.png'></div>"
     );
   }
 }
 
 function unsetLoader() {
   if ($("#modal").get().length) {
-    $("#modal").fadeOut(1000, function () {
+    $("#modal").fadeOut(1000, function() {
       $("#modal").remove();
     });
   }
@@ -439,9 +431,9 @@ function manageBookmark(pprodid, pboxid, pmoviename, pimage) {
   //PARAMS
   setLoader();
   const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-  const operation = $("#manageBookmark").hasClass("bookmarked")
-    ? "DELETE"
-    : "PUT";
+  const operation = $("#manageBookmark").hasClass("bookmarked") ?
+    "DELETE" :
+    "PUT";
   const url = getPathSetBookmark();
   $.ajax({
     url: url + "?movieId=" + pprodid,
@@ -452,7 +444,7 @@ function manageBookmark(pprodid, pboxid, pmoviename, pimage) {
     dataType: "json",
     type: operation,
     cache: false,
-    complete: function () {
+    complete: function() {
       if ($("#manageBookmark").hasClass("bookmarked")) {
         $("#manageBookmark").removeClass("bookmarked");
         $("#manageBookmark").html("AGREGAR A MI LISTA");
@@ -462,7 +454,7 @@ function manageBookmark(pprodid, pboxid, pmoviename, pimage) {
       }
       unsetLoader();
     },
-    error: function (response) {
+    error: function(response) {
       console.log("ERROR manageBookmark", response);
       unsetLoader();
     }
@@ -503,7 +495,7 @@ function setUserHistory(pMovieId, pprodid, playerType) {
     dataType: "json",
     type: "GET",
     cache: false,
-    success: function (resultData) {
+    success: function(resultData) {
       console.log("setUserHistory: ", resultData);
       var result = resultData.data;
       console.log("resumePoint: ", result);
@@ -534,14 +526,10 @@ function setUserHistory(pMovieId, pprodid, playerType) {
         );
       }
     },
-    complete: function (result) {
-      // if (playerType == "vimeo") {
-      //   vimeoPlayer.play();
-      //   $("#div_vimeo_player").addClass("player-wraper");
-      // }
+    complete: function(result) {
       setCurLevelVideo();
     },
-    error: function (response) {
+    error: function(response) {
       console.log("ERROR setUserHistory", response);
     }
   });
@@ -563,16 +551,19 @@ function abortTimer() {
 
 //Llamado al player desde el botón Ver Ahora
 function createPlayer(pvideoId, pprodid) {
-  curLevel = level.NONE;
-  $("#modalConfirmAction").remove();
-  $(".onFocus").removeClass("onFocus");
   setLoader();
-  //TODO: Setea el zindex en 10 para cuando este el curlevel en VIDEO o cuando creas el player
+  curLevel = level.NONE;
+  $(".onFocus").removeClass("onFocus");
+  //TO DO: Setea el zindex en 10 para cuando este el curlevel en VIDEO o cuando creas el player
   if (!isNaN(Number(pvideoId)) && typeof Number(pvideoId) == "number") {
     setUserHistory(pvideoId, pprodid, "vimeo");
   } else {
     setUserHistory(pvideoId, pprodid, "jwplayer");
   }
+
+  setTimeout(function() {
+  $("#modalConfirmAction").remove();
+  }, 500);
 }
 
 function Destroy() {
@@ -581,92 +572,4 @@ function Destroy() {
     jcp.destroy();
     jcp = null;
   }
-  // if (vimeoPlayer) {
-  //   // TODO: DESTRUIR O STOPEAR PLAYER VIMEO
-  //   vimeoPlayer.destroy().then(function () {
-  //     console.log("Vimeo Player destroyed");
-  //   });
-  //   vimeoPlayer = null;
-  // }
 }
-
-// function onButtonBlueVimeo() {
-//   vimeoPlayer.getTextTracks().then(function (tracks) {
-//     if (tracks.length > 0) {
-//       var isTackShowingVimeo = false;
-//       for (let index = 0; index < tracks.length; index++) {
-//         const element = tracks[index];
-//         if (element.mode == "showing") {
-//           isTackShowingVimeo = true;
-//         }
-//       }
-//       if (isTackShowingVimeo) {
-//         vimeoPlayer.disableTextTrack();
-//       } else {
-//         vimeoPlayer
-//           .enableTextTrack(tracks[0].language)
-//           .then(function (track) {})
-//           .catch(function (error) {
-//             switch (error.name) {
-//               case "InvalidTrackLanguageError":
-//                 // There is no text track for the specified language
-//                 console.log(
-//                   "Error InvalidTrackLanguageError enable tracks VIMEO",
-//                 );
-//                 break;
-//               case "InvalidTrackError":
-//                 // There is no such text track
-//                 console.log("Error InvalidTrackError enable tracks VIMEO");
-//                 break;
-//               default:
-//                 // Some other error occurred
-//                 console.log("Error enable tracks VIMEO");
-//                 break;
-//             }
-//           });
-//       }
-//     }
-//   });
-// }
-
-// function onTimeUpdateVimeo(progress, idMovie, percentage, movieProgressId) {
-//   const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-//   console.log("ACTULIZO PROGRESO VIMEO", progress, idMovie, percentage);
-//   const urlPathUpdateHistory = getPathUptHistory();
-//   if (percentage > 0.95) {
-//     const urlPathDeleteHistory = getPathDeleteHistory();
-//     $.ajax({
-//       url: urlPathDeleteHistory,
-//       headers: {
-//         Authorization: "TV",
-//         U: JSON.stringify(userSync.User),
-//       },
-//       dataType: "json",
-//       data: { id: movieProgressId },
-//       type: "DELETE",
-//       success: function () {
-//         console.log("progress deleted - movie finish");
-//       },
-//       error: function (err) {
-//         console.log("progress deleted", err);
-//       },
-//     });
-//   } else {
-//     $.ajax({
-//       url: urlPathUpdateHistory + "?id=" + idMovie,
-//       headers: {
-//         Authorization: "TV",
-//         U: JSON.stringify(userSync.User),
-//       },
-//       dataType: "json",
-//       data: { time: Math.floor(progress) },
-//       type: "PUT",
-//       success: function () {
-//         console.log("progress updated VIMEO");
-//       },
-//       error: function (err) {
-//         console.log("progress updated error VIMEO", err);
-//       },
-//     });
-//   }
-// }
