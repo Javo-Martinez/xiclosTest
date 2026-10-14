@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="UTF-8">
+	<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://xiclos-prod.firebaseapp.com/tv/common/css/custom.css">
+	<link rel="stylesheet" type="text/css" href="https://xiclos-prod.firebaseapp.com/tv/common/css/site.css">
+	<link rel="stylesheet" type="text/css" href="https://xiclos-prod.firebaseapp.com/tv/common/css/slider.css">
+	<link rel="stylesheet" type="text/css" href="https://xiclos-prod.firebaseapp.com/tv/tizen/css/tizen.css">
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/JCPlayer.js"></script>
+	<script src="https://player.vimeo.com/api/player.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/jquery.min.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/jquery-ui.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/jquery.md5.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/tizen/js/keycode.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/config.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/login.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/tizen/js/tizen.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/spatial.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/utils.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/search.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/xiclos.js"></script>
+	<script type="text/javascript" src="https://xiclos-prod.firebaseapp.com/tv/common/js/arrows.js"></script>
+	<script type="text/javascript">
+		localStorage.setItem("userroles","cliente");
+		localStorage.setItem("username","cliente");
+		localStorage.setItem("xiclos_token","d5797c1caf5716d547da6535a25aac88");
+	</script>
+
+</head>
+<!-- <body onload="initMainScreen();"> -->
+	<body onload="checkLogin();">
+    <div id="div_vimeo_player"></div>
+    <div id="mainContainer">    </div>
+        
+        <div class="trapezium"></div>
+        <div class="trapezium2"></div>
+        <div class="triangle"></div>
+        <div id="result">
+            <img src="https://xiclos-prod.firebaseapp.com/tv/common/img/logo.png">
+        </div>
+    
+
+    
+    
+    <script type="text/javascript">
+    	window.addEventListener('offline', function(e) { console.log('offline');  setOnOff('offline');});
+    	
+    	window.addEventListener('online', function(e) { console.log('online'); setOnOff('online');});
+    </script>
+</body>
+</html>
+

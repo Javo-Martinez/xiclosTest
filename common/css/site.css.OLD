@@ -1,0 +1,183 @@
+ .content {
+     width: 1500000000000000px;
+     margin: auto;
+     margin-top: 40px;
+}
+ #content #Header {
+     width: 1276px;
+     height: 96px;
+     background: blue;
+}
+ #content #pageBody {
+     width: 50%;
+     height: 260px;
+     background: yellow;
+     position: absolute;
+     margin-left: 15%;
+     top: 8%;
+}
+ #content #Footer {
+     width: 1276px;
+     height: 96px;
+     background: green;
+}
+ .left{
+     float: left;
+}
+ .box.onFocus .poster, .chapter.onFocus{/* box-shadow: 6px 10px 5px 0px #eb564a; */outline: solid 4px #eb564a;transform: scale(1.25);}
+
+.box.onFocus .poster.estrenos{
+
+/* box-shadow: inset 0 0 55px 2px rgb(255, 255, 255), 0 0 30px 3px rgb(255, 255, 255), 0 0 16px 4px rgb(255, 255, 255); */
+
+outline: solid 3px #009D72;
+}
+ .box.onFocus.estrenos .poster{
+
+/* box-shadow: inset 0 0 55px 2px rgb(255, 255, 255), 0 0 30px 3px rgb(255, 255, 255), 0 0 16px 4px rgb(255, 255, 255); */
+
+outline: solid 3px #009D72;
+}
+
+ .poster, .posterTitle {
+     /* position: absolute; */
+     z-index: 20;
+     margin-top: 10px;
+     width: 61%;
+}
+ .posterTitle{
+     min-height: 123px;
+     text-align: center;
+     padding-top: 10px;
+     text-transform: uppercase;
+     font-size: 15px;
+     font-weight: bold;
+     /* margin-top: 16%; */
+     display: none;
+}
+ .onFocus .boxContent{
+     /* margin-left: 361px; */
+     /* margin-top: -248px; */
+     /* height: 238px; */
+     /* width: 438px; */
+     /* padding: 10px 0 0 10px; */
+}
+
+ .navArrow {
+    width: 63px;
+    height: 76px;
+}
+
+  .arrowL{
+    top: 200px;
+    left: 95px;
+}   
+     .arrowR{
+        top: 200px;
+        right: 105px;
+    }
+
+
+     
+    .arrowT{
+        top: 25px;
+        left: 890px;
+     }
+
+    .arrowT:hover{
+        /* top: 0px; */
+    }
+     
+     .arrowB{
+        top: 389px;
+        left: 910px;
+        z-index: 1000;
+        right: 50%;
+     }
+
+     #svgicon-right{
+    margin-left: 100%;
+    right: 0;
+}
+
+#svgicon-left{
+    transform: rotate(180deg);
+}
+
+#svgicon-top{
+    transform: rotate(-90deg)
+}
+
+#svgicon-bottom{
+    transform: rotate(90deg)
+}
+
+.navigationArrow{
+    position: absolute;
+    z-index: 10000000;
+}
+
+/* NETCAST STYLES */
+/******************/
+ @media only screen and (max-width: 1280px) {
+
+     .onFocus .boxContent{
+        /* margin-left: 214px; */
+        margin-top: 0px;
+        height: 214px;
+        width: 355px;
+        padding: 10px 0 0 10px;
+    }
+
+
+.navigationArrow{
+    position: absolute;
+    z-index: 10000000;
+}
+
+
+#footBlocker{
+    position: absolute;
+    width: 100%;
+    height: 70px;
+    /* background: rgba(0, 0, 0, 0.71); */
+    z-index: 111;
+    bottom: 0;
+    /* opacity: .7; */
+} 
+
+
+.posterTitle {
+    padding-top: 70px;
+    font-size: 10px;
+}
+     
+ .navArrow {
+    width: 43px;
+    height: 76px;
+}
+  .arrowL{
+    top: 120px;
+    left: 24px;
+}
+     .arrowR{
+        top: 120px;
+        right: 122px;
+    }
+
+
+     
+    .arrowT{
+        top: 0px;
+        left: 594px;
+     }
+
+     
+     .arrowB{
+        top: 255px;
+        left: 602px;
+        z-index: 1000;
+        right: 50%;
+     }
+     
+ }

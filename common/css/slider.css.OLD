@@ -1,0 +1,174 @@
+.stripTitle{
+     margin-top: 24px;
+     position: relative;
+}
+ .box, .menu, .explore{
+    /* height: 257px;
+     width: 185px;
+    */
+    float: left;
+    /* opacity: .8; */
+    height: 419px;
+    width: 276px;
+    /* margin-right: -1px; */
+}
+ .box.onFocus,  .menu.onFocus{
+     cursor: pointer;
+}
+
+.menu p, .explore p.nomGenre{
+     background: rgba(0, 0, 0, 0.5);
+     margin-top: 0px;
+     width: 192px;
+     text-align: center;
+     font-size: 22px;
+     padding-top: 220px;
+     height: 70px;
+}
+
+.explore p.nomGenre{padding-top: 200px;height: 92px;font-size: 25px;font-family: Brandon Bold;}
+
+.menu.onFocus > p{
+	outline: solid 3px #eb564a;
+	cursor: pointer;
+	margin-left: 3px;
+    color: #eb564a;
+}
+
+.menu.estrenos.onFocus > p{
+	outline: solid 3px #009D72;
+	cursor: pointer;
+}
+/* 
+ #boxMenu0 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/perfiles.svg");
+ }
+ 
+ #boxMenu1 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/buscar.svg");
+ }
+ 
+ #boxMenu2 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/misala.svg");
+ }
+ 
+  #boxMenu3 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/todo.svg");
+ }
+ 
+  #boxMenu4 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/peliculas.svg");
+ }
+ 
+  #boxMenu5 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/series.svg");
+ }
+ 
+  #boxMenu6 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/cortos.svg");
+ }
+ 
+  #boxMenu7 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/especiales.svg");
+ }
+ 
+  #boxMenu8 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/estrenos.svg");
+ }
+ 
+  #boxMenu9 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/ultimas.svg");
+ }
+ 
+  #boxMenu10 p{
+ 	background-image: url("https://play.cine.ar/tv/common/img/logout.svg");
+ }
+*/ 
+ #boxMenu0, #boxMenu1, #boxMenu2, 
+ #boxMenu3, #boxMenu4, #boxMenu5, 
+ #boxMenu6, #boxMenu7, #boxMenu8,  
+ #boxMenu9, #boxMenu10, .explore {
+     background-size: 192px 288px;
+ 	 background-repeat: no-repeat;
+}
+
+ .explore .nomGenre{
+     width: 192px;
+     text-transform: uppercase;
+     margin-top: 51%;
+     text-align: center;
+     font-size: 22px;
+}
+
+     .abGenre{
+     	margin-top: 43px;
+     	position: absolute;
+     	width: 192px;
+     	text-align: center;
+     	font-size: 91px;
+     	font-family: Brandon Bold;
+     }
+
+     .explore.onFocus p.abGenre, .explore.onFocus p.nomGenre{
+        color: #00dce4;
+     }
+
+     .explore.onFocus p.nomGenre{
+    	outline: solid 3px #00dce4;
+    	cursor: pointer;
+     }
+
+/* NETCAST STYLES */
+/******************/
+ @media only screen and (max-width: 1280px) {
+     .box, .menu{
+         float: left;
+         height: 273px;
+         width: 193px;
+         /* margin-right: 24px; */
+    }
+     .stripTitle {
+        font-size: 20px;
+        margin-top: 0;
+        /* height: 29px; */
+    }
+
+
+ #boxMenu0, #boxMenu1, #boxMenu2, 
+ #boxMenu3, #boxMenu4, #boxMenu5, 
+ #boxMenu6, #boxMenu7, #boxMenu8,  
+ #boxMenu9, #boxMenu10, .explore {
+     background-size: 192px 288px;
+}
+
+	 .menu p, .explore p.nomGenre{
+		 background: rgba(0, 0, 0, 0.5);
+		 margin-top: 0px;
+		 width: 126px;
+		 text-align: center;
+		 font-size: 15px;
+		 padding-top: 145px;
+		 height: 47px;
+		 font-family: Brandon Bold;
+		 text-transform: uppercase;
+	}
+
+
+     .menu p img, .explore p.nomGenre img{
+     	margin-top: 59%;
+     	width: 75%;
+     }
+     
+     .abGenre{
+     	margin-top: 20px;
+     	position: absolute;
+     	width: 127px;
+     	text-align: center;
+     	/* padding-top: 0px; */
+     	font-size: 55px;
+     	font-family: Brandon Bold;
+     }
+
+
+
+}

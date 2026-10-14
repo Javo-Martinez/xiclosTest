@@ -1,0 +1,23 @@
+/*
+*{
+	cursor: none !important;
+}
+
+*/
+
+img:hover{
+	cursor: none !important;
+}
+
+ .navButton:hover{
+	cursor: none !important;
+}
+
+ .box-secondaryProfile:hover, .profileWrapper.onFocus, .profileWrapper:hover{
+     opacity: .5 !important;
+}
+
+#loginButton.onFocus, #loginButton:hover{
+         background: #00dde4;
+         color: #000000;
+}
