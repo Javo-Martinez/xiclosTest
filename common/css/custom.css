@@ -2285,13 +2285,19 @@ li {
   color: #fff;
 }
 #xtvSearch .xs-movies {
-  overflow: hidden;
+  /* sin overflow: hidden, que recortaba el borde del afiche con foco */
+  padding: 0.3vw 0 0 0.3vw;
+}
+#xtvSearch .xs-movies:after {
+  content: "";
+  display: block;
+  clear: both;
 }
 #xtvSearch .xs-movie {
   float: left;
-  width: -webkit-calc(20% - 1vw);
-  width: calc(20% - 1vw);
-  margin: 0 1vw 1.2vw 0;
+  width: -webkit-calc(16.666% - 1.1vw);
+  width: calc(16.666% - 1.1vw);
+  margin: 0 1.1vw 1.1vw 0;
   cursor: pointer;
 }
 #xtvSearch .xs-movie .ph {
@@ -2308,15 +2314,29 @@ li {
   height: 100%;
 }
 #xtvSearch .xs-movie .t {
-  font-size: 0.95vw;
+  font-size: 0.85vw;
   text-align: center;
   margin-top: 0.5vw;
-  height: 2.6vw;
+  height: 2.4vw;
   overflow: hidden;
   color: #ddd;
 }
-#xtvSearch .xs-movie.onFocus .ph {
-  outline: 0.25vw solid #eb564a;
+/* Borde de foco dibujado por dentro del afiche: siempre se ve completo */
+#xtvSearch .xs-movie .ph:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 0.22vw solid transparent;
+  z-index: 1;
+}
+#xtvSearch .xs-movie.onFocus .ph:after {
+  border-color: #eb564a;
+}
+#xtvSearch .xs-movie.onFocus .t {
+  color: #fff;
 }
 #xtvSearch .xs-recent {
   font-size: 1.4vw;
