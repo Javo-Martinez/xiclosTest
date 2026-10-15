@@ -1,0 +1,167 @@
+.stripTitle{
+     margin-top: 29px;
+     position: relative;
+     /* margin-left: 1295px; */
+     /* text-align: right; */
+     /* width: 576px; */
+     padding-left: 75px;
+     background: rgba(212, 212, 212, 0.77);
+     padding-top: 5px;
+     padding-bottom: 5px;
+     background: url('../img/titleBackground.png');
+     background-repeat: repeat-y;
+}
+ .box, .menu, .explore{
+    /* height: 257px;
+     width: 185px;
+    */
+    float: left;
+    /* opacity: .8; */
+    height: 419px;
+    width: 200px;
+    /* margin-right: -1px; */
+}
+
+.menu{
+	height: 419px;
+	width: 258px;
+}
+
+ .box.onFocus,  .menu.onFocus{
+     cursor: pointer;
+}
+
+.menu p, .explore p.nomGenre{
+     background: rgba(0, 0, 0, 0.5);
+     margin-top: 0px;
+     width: 192px;
+     text-align: center;
+     font-size: 22px;
+     padding-top: 220px;
+     height: 70px;
+}
+
+.menu p {
+     padding-top: 78px;
+     height: 96px;
+     margin-top: 33px;
+     background: transparent;
+}
+
+.explore p.nomGenre{padding-top: 200px;height: 92px;font-size: 25px;font-family: Brandon Bold;}
+
+.menu.onFocus > p{
+	outline: solid 3px #eb564a;
+	cursor: pointer;
+	margin-left: 3px;
+	color: #eb564a;
+	transform: scale(1.2);
+}
+
+ #boxMenu0, #boxMenu1, #boxMenu2, 
+ #boxMenu3, #boxMenu4, #boxMenu5, 
+ #boxMenu6, #boxMenu7, #boxMenu8,  
+ #boxMenu9, #boxMenu10, .explore {
+     background-size: 192px 288px;
+ 	 background-repeat: no-repeat;
+}
+
+ .explore .nomGenre{
+     width: 192px;
+     text-transform: uppercase;
+     margin-top: 51%;
+     text-align: center;
+     font-size: 22px;
+}
+
+     .abGenre{
+     	margin-top: 43px;
+     	position: absolute;
+     	width: 192px;
+     	text-align: center;
+     	font-size: 91px;
+     	font-family: Brandon Bold;
+     }
+
+     .explore.onFocus p.abGenre, .explore.onFocus p.nomGenre{
+        color: #00dce4;
+     }
+
+     .explore.onFocus p.nomGenre{
+    	outline: solid 3px #00dce4;
+    	cursor: pointer;
+     }
+
+
+	.leftZero{
+		margin-left: 0px !important
+	}
+
+
+/* 1280 STYLES */
+ @media only screen and (max-width: 1280px) {
+     .box {
+         float: left;
+         height: 273px;
+         width: 123px;
+         margin-right: 10px;
+    }
+
+    .menu{
+         float: left;
+         height: 273px;
+         width: 162px;
+         margin-right: 8px;
+         margin-top: 28px;
+    }
+     .stripTitle {
+        font-size: 18px;
+        margin-top: 0;
+        /* height: 29px; */
+        margin-left: -194px;
+        padding-left: 240px;
+        padding-top: 3px;
+        padding-bottom: 3px;
+    }
+
+
+ #boxMenu0, #boxMenu1, #boxMenu2, 
+ #boxMenu3, #boxMenu4, #boxMenu5, 
+ #boxMenu6, #boxMenu7, #boxMenu8,  
+ #boxMenu9, #boxMenu10, .explore {
+     background-size: 192px 288px;
+}
+
+	 .menu p, .explore p.nomGenre{
+		 background: rgba(0, 0, 0, 0.5);
+		 margin-top: 0px;
+		 width: 126px;
+		 text-align: center;
+		 font-size: 15px;
+		 padding-top: 145px;
+		 height: 47px;
+		 text-transform: uppercase;
+	}
+
+	 .menu p{
+	 	 font-size: 15px;
+	 	 padding-top: 50px;
+	 	 height: 76px;
+	 	 background: transparent;
+	 }
+     .menu p img, .explore p.nomGenre img{
+     	margin-top: 59%;
+     	width: 75%;
+     }
+     
+     .abGenre{
+     	margin-top: 20px;
+     	position: absolute;
+     	width: 127px;
+     	text-align: center;
+     	/* padding-top: 0px; */
+     	font-size: 55px;
+     	font-family: Brandon Bold;
+     }
+
+}

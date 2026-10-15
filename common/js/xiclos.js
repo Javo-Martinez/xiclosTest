@@ -1,566 +1,1079 @@
-//XICLOS
-//SITE
-$(function() {
-    // Cuando se presiona una tecla sobre disparo la funcion keyDown
-    $('body').keydown(function(event) {
-        keyDown(event);
-    });
-});
+/*
+ * Xiclos TV v2 - grilla, pantallas y acciones
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * En Amazon (mientras siga con la versión anterior) carga la copia de common/legacy/js/xiclos.js.
+ * ES5 puro.
+ */
+if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
+  window.XTV_BOOT.load("xiclos.js");
+} else {
+  /*
+   * Xiclos TV v2 - grilla de tiras, detalle y pantallas
+   *
+   * Pantallas: "home", "cineclub" y "list" (búsqueda, género, exclusivos,
+   * historial, mi lista). Cada una guarda sus tiras, la tira con foco y la
+   * posición dentro de cada tira, así que al volver se recupera todo.
+   *
+   * - Horizontal: lineal, con principio y fin. Desde el primer póster,
+   *   izquierda abre el menú.
+   * - Vertical: circular. La tira con foco siempre queda arriba.
+   * - Tiras y pósters se cargan a medida que hacen falta.
+   *
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
 
+    var C = XTV.config;
+    var P = XTV.paths;
+    var util = XTV.util;
 
-$(".box").click(function(e) {
-    e.preventdefault();
-    $('.box').prop('disabled', true);
-});
+    var screens = {};
+    var activeName = null;
+    var $grid = null;
+    var $header = null;
+    var $detailsContainer = null;
+    var lastFocusedEl = null;
+    var layout = { itemWidth: 0, baseLeft: 0 };
 
-function focusDelay(pid) {
-    timeout = setTimeout(
-        function() {
-            $('.onHover').removeClass('onHover');
-            $('.onFocus').removeClass('onFocus');
-            $('.activeContent').removeClass('activeContent');
-            $("#" + pid).addClass('onHover').addClass('activeContent');
-            console.log('in: #' + pid);
+    /* ======================================================================
+     * Pantalla
+     * ==================================================================== */
+    function Screen(name, gridClass) {
+      this.name = name;
+      this.gridClass = gridClass || "";
+      this.rows = [];
+      this.rowIndex = 0;
+      this.complete = true;
+      this.loading = false;
+      this.nextOffset = 0;
+      this.pendingDown = false;
+      this.loadingFirst = false;
+      this.gen = 0;
+      this.meta = {};
+      this.$rows = $('<div class="xtvRows"></div>');
+      this.$rows.attr("data-screen", name);
+    }
 
-            var showDetail = pid.replace("box", "")
+    Screen.prototype.reset = function () {
+      this.gen++;
+      this.rows = [];
+      this.rowIndex = 0;
+      this.complete = true;
+      this.loading = false;
+      this.nextOffset = 0;
+      this.pendingDown = false;
+      this.$rows.empty();
+    };
 
-            $('.onHover').addClass('onFocus').attr("onclick", "showProdDetails(" + showDetail + ")");
-            $("#" + pid).addClass('onFocus');
-            showProdDetails(showDetail);
+    Screen.prototype.currentRow = function () {
+      return this.rows[this.rowIndex] || null;
+    };
 
-        }, 1000);
+    Screen.prototype.currentItem = function () {
+      var row = this.currentRow();
+      return row ? row.items[row.col] || null : null;
+    };
 
-}
+    function screen(name) {
+      ensureLayout();
+      if (!screens[name]) {
+        var gridClass = name === "cineclub" ? "cineclub" : name === "list" ? "specialContentSearch" : "";
+        screens[name] = new Screen(name, gridClass);
+        $grid.append(screens[name].$rows);
+        screens[name].$rows.hide();
+      }
+      return screens[name];
+    }
 
-function outOfFocus(pid) {
-    $("#" + pid).removeClass('onHover');
-    $("#" + pid).prop("onclick", null).off("click");
-    console.log('out');
-    clearTimeout(timeout);
-}
+    function active() {
+      return activeName ? screens[activeName] : null;
+    }
 
-function menuFocus(pid) {
-    $('.onHover').removeClass('onHover');
-    $('.onFocus').removeClass('onFocus');
-    $('.activeMenu').removeClass('activeMenu');
-    $("#" + pid).addClass('onHover');
+    /* ======================================================================
+     * Estructura base (#mainContent > #header + #grid)
+     * ==================================================================== */
+    function ensureLayout() {
+      if ($grid) {
+        return;
+      }
+      $("#mainContent").remove();
+      var $main = $('<div id="mainContent"><div id="header"></div><div id="grid"></div></div>');
+      if ($("#result").length) {
+        $("#result").after($main);
+      } else {
+        $("body").append($main);
+      }
+      $header = $main.find("#header");
+      $grid = $main.find("#grid");
+      var $details = $('<div class="prodDetails" style="display:block"><div class="detailsContainer"></div></div>');
+      $header.append($details);
+      $detailsContainer = $details.find(".detailsContainer");
 
-    var myOnclick = $("#" + pid).attr('clickparam');
+      // Puntero: pasar por un póster de la tira con foco lo enfoca sin
+      // desplazar la tira (así el contenido no se mueve bajo el puntero).
+      $grid.on("mousemove", ".box", function () {
+        if (!XTV.pointer.isActive()) {
+          return;
+        }
+        var pos = positionOf(this);
+        var s = active();
+        if (!pos || !s || pos.row !== s.rowIndex) {
+          return;
+        }
+        if (XTV.state.layer === "menu") {
+          XTV.menu.close();
+        }
+        if (XTV.state.layer !== "grid" || s.rows[pos.row].col === pos.col) {
+          return;
+        }
+        s.rows[pos.row].col = pos.col;
+        focusChanged(true);
+      });
+      $grid.on("click", ".box", function () {
+        var pos = positionOf(this);
+        var s = active();
+        if (!pos || !s) {
+          return;
+        }
+        if (XTV.state.layer === "menu") {
+          XTV.menu.close();
+        }
+        if (XTV.state.layer !== "grid") {
+          return;
+        }
+        if (pos.row !== s.rowIndex) {
+          s.rowIndex = pos.row;
+          applyOrder(s);
+        }
+        s.rows[pos.row].col = pos.col;
+        focusChanged(true);
+        openCurrent();
+      });
 
-    $("#" + pid).attr("onclick", myOnclick)
-    console.log('in: #' + pid);
-    $('.onHover').addClass('onFocus');
-    $('.onFocus').attr("cursor", "pointer");
-    $('.onFocus').addClass('activeMenu');
-}
+      $(window).on("resize", function () {
+        layout.itemWidth = 0;
+        var s = active();
+        if (s) {
+          for (var i = 0; i < s.rows.length; i++) {
+            applyScroll(s.rows[i], false);
+          }
+          focusChanged(false);
+        }
+      });
+    }
 
-function menuFocusDelay(pid) {
-    timeout = setTimeout(
-        function() {
+    function positionOf(boxEl) {
+      var $box = $(boxEl);
+      var $row = $box.closest(".gridContent");
+      if (!$row.length) {
+        return null;
+      }
+      return {
+        row: parseInt($row.attr("data-row"), 10),
+        col: parseInt($box.attr("data-col"), 10)
+      };
+    }
 
-            menuFocus(pid);
-        }, 500);
-}
+    /* ======================================================================
+     * Tiras
+     * ==================================================================== */
+    function boxHtml(items, j) {
+      var n = items.length;
+      var cls = "box";
+      if (j === 0) {
+        cls += " firstElement";
+      } else if (j === n - 1) {
+        cls += " lastElement";
+      }
+      return (
+        '<div class="' +
+        cls +
+        '" data-col="' +
+        j +
+        '"><img class="poster" alt=""><div class="posterTitle">' +
+        util.text(items[j].title) +
+        "</div></div>"
+      );
+    }
 
-function outOfMenuFocus(pid) {
-    $("#" + pid).removeClass('onHover');
-    //$("#"+pid).removeAttr("onclick");
-    clearTimeout(timeout);
-}
+    function buildRow(row, index) {
+      var html =
+        '<div class="gridContent" data-row="' +
+        index +
+        '"><div class="verticalRectangle"></div><div class="stripTitle">' +
+        (row.titleHtml || util.text(row.title)) +
+        '</div><div class="content"></div></div>';
+      row.el = $(html).get(0);
+      row.content = $(row.el).find(".content").get(0);
+      row.boxes = row.content.children;
+      row.imgs = row.content.getElementsByTagName("img");
+      row.loaded = {};
+      row.rendered = 0;
+      row.col = row.col || 0;
+      row.offset = 0;
+      // Las tiras largas (por ejemplo Estrenos) se crean de a tandas: el
+      // costo inicial es el mismo tenga 20 o 300 películas.
+      renderUpTo(row, C.ROW_CHUNK);
+    }
 
-//SETUP
-function initMainScreen() {
-    console.log("INIT MAIN SCREEN", new Date())
-    $("#modalPin").remove();
-    setHome();
-    getStrips();
-    localStorage.removeItem("currentProduction");
-    localStorage.removeItem("published_strips");
-    localStorage.removeItem("detailedproduction");
+    function renderUpTo(row, count) {
+      var target = Math.min(row.items.length, count);
+      if (target <= row.rendered) {
+        return;
+      }
+      var html = "";
+      for (var j = row.rendered; j < target; j++) {
+        html += boxHtml(row.items, j);
+      }
+      row.content.insertAdjacentHTML("beforeend", html);
+      row.rendered = target;
+    }
 
-}
+    // Siempre hay pósters creados por delante del foco
+    function ensureRendered(row) {
+      if (row && row.rendered < row.items.length && row.col + C.ROW_CHUNK_AHEAD >= row.rendered) {
+        renderUpTo(row, row.col + C.ROW_CHUNK_AHEAD + C.ROW_CHUNK);
+      }
+    }
 
-function setHome() {
+    // data: [{tira, detalle: [...]}, ...]
+    function appendStrips(s, data) {
+      var added = 0;
+      for (var i = 0; i < data.length; i++) {
+        var strip = data[i];
+        if (!strip || !strip.detalle || !strip.detalle.length) {
+          continue; // las tiras vacías no se muestran (no se puede navegar en ellas)
+        }
+        addRow(s, { title: strip.tira, items: strip.detalle });
+        added++;
+      }
+      return added;
+    }
 
-    curLevel = level.BODY;
-    $("#header").css("display", "none")
-    $("#results").remove();
-}
+    function addRow(s, row) {
+      var index = s.rows.length;
+      buildRow(row, index);
+      s.rows.push(row);
+      s.$rows.append(row.el);
+      prepareRowWidth(row);
+    }
 
+    function itemWidth() {
+      if (!layout.itemWidth) {
+        var box = $grid ? $grid.find(".box:visible").get(0) : null;
+        if (box) {
+          layout.itemWidth = $(box).outerWidth(true) || 0;
+          // Posición izquierda de la tira sin desplazamiento. offsetLeft no
+          // incluye el transform, así que sirve aunque la tira esté corrida.
+          var el = $(box).closest(".content").get(0);
+          var left = 0;
+          while (el) {
+            left += el.offsetLeft || 0;
+            el = el.offsetParent;
+          }
+          layout.baseLeft = left;
+        }
+      }
+      return layout.itemWidth || 240;
+    }
 
-function returnHome() {
+    function viewportWidth() {
+      return window.innerWidth || $(window).width() || 1920;
+    }
+
+    function prepareRowWidth(row) {
+      // Ancho explícito: los motores viejos no soportan width: max-content
+      // y los pósters se partirían en varias líneas.
+      var w = layout.itemWidth || 0;
+      if (w) {
+        row.content.style.width = row.items.length * w + 20 + "px";
+      }
+    }
+
+    function applyScroll(row, fromPointer) {
+      if (!row) {
+        return;
+      }
+      var w = itemWidth();
+      if (!row.content.style.width) {
+        prepareRowWidth(row);
+      }
+      var n = row.items.length;
+      var avail = viewportWidth() - layout.baseLeft - 30;
+      var maxOffset = Math.max(0, n * w - avail);
+      var target = Math.min(row.col * w, maxOffset);
+      if (fromPointer) {
+        // Con el puntero solo se desplaza si el póster no se ve completo
+        var left = row.col * w - row.offset;
+        if (left >= 0 && left + w <= avail) {
+          target = row.offset;
+        }
+      }
+      target = Math.max(0, target);
+      if (target !== row.offset || fromPointer === false) {
+        row.offset = target;
+        util.setTranslateX(row.content, target);
+      }
+    }
+
+    // La tira con foco queda primera; el resto sigue en orden circular.
+    function applyOrder(s) {
+      var n = s.rows.length;
+      var parent = s.$rows.get(0);
+      for (var k = 0; k < n; k++) {
+        parent.appendChild(s.rows[(s.rowIndex + k) % n].el);
+      }
+    }
+
+    function ensureImages(row) {
+      if (!row) {
+        return;
+      }
+      var w = itemWidth();
+      var avail = viewportWidth() - layout.baseLeft;
+      var first = Math.floor(row.offset / w);
+      var count = Math.ceil(avail / w);
+      var from = Math.max(0, first - C.POSTERS_BEHIND);
+      var to = Math.min(row.rendered - 1, first + count + C.POSTERS_AHEAD);
+      for (var j = from; j <= to; j++) {
+        if (!row.loaded[j]) {
+          row.loaded[j] = true;
+          var src = row.items[j].poster;
+          if (src) {
+            row.imgs[j].src = src;
+          }
+        }
+      }
+    }
+
+    /* ======================================================================
+     * Detalle y fondo
+     * ==================================================================== */
+    var setBackground = util.debounce(function (poster) {
+      $("#mainContainer").css({
+        "background-image": poster ? util.cssUrl(poster) : "none",
+        "background-repeat": "no-repeat",
+        "background-position": "0px 25%",
+        "background-size": "cover"
+      });
+    }, C.BACKGROUND_DELAY_MS);
+
+    function renderDetails(item) {
+      if (!$detailsContainer) {
+        return;
+      }
+      if (!item) {
+        $detailsContainer.html("");
+        setBackground(null);
+        return;
+      }
+      var h = '<div class="prodTitle">' + util.text(item.title) + "</div>";
+      h += '<div class="prodSinopsis">' + util.text(item.sinopsis) + "</div>";
+      if (!util.isEmpty(item.audience)) {
+        h += '<div class="prodAudience">' + util.text(item.audience) + "</div>";
+      }
+      if (!util.isEmpty(item.duration)) {
+        h += '<div class="prodDuration">' + util.text(item.duration) + " minutos</div>";
+      }
+      if (!util.isEmpty(item.year)) {
+        h += '<div class="prodYear">' + util.text(item.year) + "</div>";
+      }
+      if (!util.isEmpty(item.imdb)) {
+        h += '<div class="prodIMDB highlight">IMDB: ' + util.text(item.imdb) + "</div>";
+      }
+      h += '<div style="clear:both"><br></div>';
+      if (!util.isEmpty(item.genres)) {
+        h +=
+          '<div class="prodGenres"><span class="highlight">Géneros:</span> ' +
+          util.text(util.joinList(item.genres)) +
+          "</div>";
+      }
+      if (!util.isEmpty(item.director)) {
+        h +=
+          '<div class="prodDirector"><span class="highlight">Director:</span> ' +
+          util.text(util.joinList(item.director)) +
+          "</div>";
+      }
+      if (!util.isEmpty(item.actors)) {
+        h +=
+          '<div class="prodActors"><span class="highlight">Elenco:</span> ' +
+          util.text(util.joinList(item.actors)) +
+          "</div><br>";
+      }
+      $detailsContainer.html(h);
+      setBackground(item.poster);
+    }
+
+    /* ======================================================================
+     * Foco
+     * ==================================================================== */
+    function currentBox() {
+      var s = active();
+      var row = s ? s.currentRow() : null;
+      return row ? row.boxes[row.col] || null : null;
+    }
+
+    function syncFocusClass() {
+      var el = currentBox();
+      if (lastFocusedEl && lastFocusedEl !== el) {
+        $(lastFocusedEl).removeClass("onFocus activeContent");
+      }
+      lastFocusedEl = el;
+      if (!el) {
+        return;
+      }
+      if (XTV.state.layer === "grid") {
+        $(el).addClass("onFocus").removeClass("activeContent");
+      } else {
+        // El póster queda recordado pero sin resaltar (menú, modal, video)
+        $(el).removeClass("onFocus").addClass("activeContent");
+      }
+    }
+
+    function focusChanged(fromPointer) {
+      var s = active();
+      if (!s) {
+        return;
+      }
+      var row = s.currentRow();
+      ensureRendered(row);
+      if (row && !fromPointer) {
+        applyScroll(row, false);
+      } else if (row) {
+        applyScroll(row, true);
+      }
+      syncFocusClass();
+      renderDetails(s.currentItem());
+      ensureImages(row);
+      if (s.rows.length > 1) {
+        ensureImages(s.rows[(s.rowIndex + 1) % s.rows.length]);
+      }
+    }
+
+    /* ======================================================================
+     * Cambio de pantalla
+     * ==================================================================== */
+    function switchTo(name) {
+      ensureLayout();
+      var s = screen(name);
+      activeName = name;
+      for (var key in screens) {
+        if (screens.hasOwnProperty(key)) {
+          if (key === name) {
+            screens[key].$rows.show();
+          } else {
+            screens[key].$rows.hide();
+          }
+        }
+      }
+      $grid.removeClass("cineclub specialContentSearch");
+      if (s.gridClass) {
+        $grid.addClass(s.gridClass);
+      }
+      if (XTV.state.layer !== "grid") {
+        XTV.setLayer("grid");
+      }
+      // Las medidas pueden haber cambiado mientras la pantalla estaba oculta
+      for (var i = 0; i < s.rows.length; i++) {
+        if (!s.rows[i].content.style.width) {
+          prepareRowWidth(s.rows[i]);
+        }
+      }
+      applyOrder(s);
+      focusChanged(false);
+    }
+
+    /* ======================================================================
+     * Home (carga progresiva)
+     * ==================================================================== */
+    function loadHome() {
+      ensureLayout();
+      var s = screen("home");
+      XTV.api.abort("home");
+      s.reset();
+      s.complete = false;
+      s.loadingFirst = true;
+      var gen = s.gen;
+
+      XTV.loader.show("home");
+      XTV.api
+        .get(P.home, { offset: 0, limit: C.HOME_FIRST_PAGE, userList: true }, "home")
+        .done(function (res) {
+          if (gen !== s.gen) {
+            return;
+          }
+          var data = (res && res.data) || [];
+          appendStrips(s, data);
+          s.nextOffset = C.HOME_FIRST_PAGE;
+          s.loadingFirst = false;
+          if (!data.length) {
+            s.complete = true;
+          }
+          afterRowsAdded(s);
+          if (!s.rows.length && s.complete) {
+            XTV.message.show("No hay contenido disponible en este momento.");
+          }
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== s.gen) {
+            return;
+          }
+          XTV.log.error("home", xhr, { offset: 0 });
+          s.complete = true;
+          XTV.message.show("No pudimos cargar el contenido. Reintentamos en unos segundos.", 4000);
+          setTimeout(function () {
+            if (gen === s.gen && activeName === "home" && !s.rows.length) {
+              loadHome();
+            }
+          }, 6000);
+        })
+        .always(function () {
+          if (gen === s.gen) {
+            s.loadingFirst = false;
+            XTV.loader.hide("home");
+          }
+        });
+    }
+
+    function loadMoreHome() {
+      var s = screen("home");
+      if (s.loading || s.complete || s.loadingFirst) {
+        return;
+      }
+      s.loading = true;
+      var gen = s.gen;
+      XTV.api
+        .get(P.home, { offset: s.nextOffset, limit: C.HOME_PAGE }, "home")
+        .done(function (res) {
+          if (gen !== s.gen) {
+            return;
+          }
+          var data = (res && res.data) || [];
+          appendStrips(s, data);
+          s.nextOffset += C.HOME_PAGE;
+          if (data.length < C.HOME_PAGE) {
+            s.complete = true;
+          }
+          s.loading = false;
+          afterRowsAdded(s);
+        })
+        .fail(function (xhr, textStatus) {
+          if (gen !== s.gen) {
+            return;
+          }
+          s.loading = false;
+          s.pendingDown = false;
+          if (!XTV.api.isAbort(xhr, textStatus)) {
+            XTV.log.error("home-more", xhr, { offset: s.nextOffset });
+          }
+        });
+    }
+
+    function afterRowsAdded(s) {
+      if (activeName === s.name) {
+        if (!layout.itemWidth) {
+          itemWidth();
+          for (var i = 0; i < s.rows.length; i++) {
+            prepareRowWidth(s.rows[i]);
+          }
+        }
+        applyOrder(s);
+        if (s.pendingDown) {
+          s.pendingDown = false;
+          if (s.rowIndex < s.rows.length - 1) {
+            s.rowIndex++;
+            applyOrder(s);
+          }
+        }
+        focusChanged(false);
+      }
+      maybeLoadMore(s);
+    }
+
+    function maybeLoadMore(s) {
+      if (s.name !== "home" || s.complete || s.loading) {
+        return;
+      }
+      if (s.rows.length - 1 - s.rowIndex < C.HOME_PREFETCH_ROWS) {
+        loadMoreHome();
+      }
+    }
+
+    /* ======================================================================
+     * Cineclub y listas
+     * ==================================================================== */
+    function showCineclub() {
+      var s = screen("cineclub");
+      XTV.api.abort("cineclub");
+      var gen = ++s.gen;
+      XTV.busy.start("cineclub", function () {
+        XTV.api.abort("cineclub");
+      });
+      XTV.api
+        .get(P.home, { videoclub: 1 }, "cineclub")
+        .done(function (res) {
+          if (gen !== s.gen) {
+            return;
+          }
+          XTV.busy.end("cineclub");
+          var data = (res && res.data) || [];
+          s.reset();
+          appendStrips(s, data);
+          if (!s.rows.length) {
+            XTV.modal.alert({ message: "No hay películas en Cineclub en este momento." });
+            return;
+          }
+          switchTo("cineclub");
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== s.gen) {
+            return;
+          }
+          XTV.busy.end("cineclub");
+          XTV.log.error("cineclub", xhr);
+          XTV.message.show("No pudimos cargar Cineclub. Probá de nuevo en unos minutos.");
+        });
+    }
+
+    var LIST_TYPES = {
+      genre: { path: "genres", title: "" },
+      students: { path: "studentsOnly", title: "EXCLUSIVO PARA ALUMNOS" },
+      history: { path: "userHistory", title: "LO QUE YA VISTE" },
+      bookmark: { path: "userBookmark", title: "MI SELECCIÓN" },
+      search: { path: "search", title: "" }
+    };
+
     /*
-    if ($('#gridContent').hasClass("bookmarked") || $('#gridContent').hasClass("students")) {
-        $('#gridContent').remove();
-        alert("sarasa 1")
+     * opts = { type: genre|students|history|bookmark|search,
+     *          genreId, genreName, terms, onEmpty }
+     */
+    function showList(opts) {
+      var def = LIST_TYPES[opts.type];
+      if (!def) {
+        return;
+      }
+      var s = screen("list");
+      XTV.api.abort("list");
+      var gen = ++s.gen;
+      var query = null;
+      var title = def.title;
+      var titleHtml = null;
+      if (opts.type === "genre") {
+        query = { genreId: opts.genreId };
+        title = String(opts.genreName || "").toUpperCase();
+      } else if (opts.type === "search") {
+        var terms = String(opts.terms || "").toUpperCase();
+        query = { searchTerms: terms };
+        titleHtml = 'RESULTADOS PARA <span class="searchTerms">' + util.esc(terms) + "</span>";
+      }
+
+      XTV.busy.start("list", function () {
+        XTV.api.abort("list");
+      });
+      XTV.api
+        .get(P[def.path], query, "list")
+        .done(function (res) {
+          if (gen !== s.gen) {
+            return;
+          }
+          XTV.busy.end("list");
+          var data = (res && res.data) || [];
+          if (!data.length) {
+            if (opts.onEmpty) {
+              opts.onEmpty();
+            } else {
+              listEmpty(opts);
+            }
+            return;
+          }
+          s.reset();
+          s.meta = opts;
+          addRow(s, { title: title, titleHtml: titleHtml, items: data });
+          switchTo("list");
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== s.gen) {
+            return;
+          }
+          XTV.busy.end("list");
+          XTV.log.error("list-" + opts.type, xhr, { query: query });
+          XTV.message.show("No pudimos cargar el contenido. Probá de nuevo en unos minutos.");
+        });
     }
-    $('.gridContent').css("display", "block");
-    setFocus();
 
-    if ($("#newMenu").hasClass("newMenuActive")) {
-
-        $("#newMenu").removeClass("newMenuActive");
-        $(".menuTitle").css("display", "none");
+    function listEmpty(opts) {
+      var msg;
+      if (opts.type === "history") {
+        msg = "Todavía no viste ninguna película en Xiclos. Próximamente encontrarás aquí todas aquellas que hayas visto.";
+      } else if (opts.type === "bookmark") {
+        msg = "Todavía no agregaste ninguna película a tu selección. Cuando las agregues podrás encontrarlas aquí y verlas cuando quieras.";
+      } else if (opts.type === "search") {
+        XTV.modal.confirm({
+          message: "No se encuentra el texto buscado: " + opts.terms + ". ¿Querés realizar una nueva búsqueda?",
+          yes: "SÍ",
+          no: "NO",
+          focusYes: true,
+          onYes: function () {
+            XTV.search.open(opts.terms);
+          }
+        });
+        return;
+      } else {
+        msg = "No encontramos producciones para esta selección.";
+      }
+      XTV.modal.alert({ message: msg });
     }
 
-    if ($("#grid").hasClass('cineclub') ||$("#grid").hasClass('specialContentSearch') || $("#gridContent").hasClass('searchResult')) {
-        $("#header").remove();
-        $("#grid").remove();
-        getStrips();
+    function reloadList() {
+      var s = screens.list;
+      if (!s || !s.meta || !s.meta.type) {
+        return;
+      }
+      var meta = s.meta;
+      showList({
+        type: meta.type,
+        genreId: meta.genreId,
+        genreName: meta.genreName,
+        terms: meta.terms,
+        onEmpty: function () {
+          goHome(false);
+          listEmpty(meta);
+        }
+      });
     }
-    */
 
-        $("#newMenu").removeClass("newMenuActive");
-        $(".menuTitle").css("display", "none");
-        $("#header").remove();
-        $("#grid").remove();
-    
-        getStrips();
-        setFocus();
+    function goHome(refresh) {
+      var s = screen("home");
+      if (refresh || (!s.rows.length && !s.loadingFirst)) {
+        switchTo("home");
+        loadHome();
+      } else {
+        switchTo("home");
+      }
+    }
 
-    timeout = setTimeout(
-        function() {
+    /* ======================================================================
+     * Acciones sobre el póster con foco
+     * ==================================================================== */
+    function openCurrent() {
+      var s = active();
+      var item = s ? s.currentItem() : null;
+      if (item) {
+        XTV.actions.openMovie(item, { screen: activeName, listType: s.meta && s.meta.type });
+      }
+    }
 
-            setFocus();
-        }, 500);
+    /* ======================================================================
+     * Teclas
+     * ==================================================================== */
+    function moveHorizontal(delta) {
+      var s = active();
+      var row = s ? s.currentRow() : null;
+      if (!row) {
+        return;
+      }
+      var next = row.col + delta;
+      if (next < 0) {
+        XTV.menu.open(0);
+        return;
+      }
+      if (next > row.items.length - 1) {
+        return;
+      }
+      row.col = next;
+      focusChanged(false);
+    }
 
+    function moveVertical(delta) {
+      var s = active();
+      if (!s || s.rows.length < 2) {
+        if (s && delta > 0 && !s.complete && !s.loadingFirst && s.name === "home") {
+          s.pendingDown = true;
+          loadMoreHome();
+        }
+        return;
+      }
+      var n = s.rows.length;
+      if (delta > 0 && s.rowIndex === n - 1 && !s.complete && s.name === "home") {
+        // Llegó al final de lo cargado: se pide más y se baja al llegar
+        s.pendingDown = true;
+        loadMoreHome();
+        return;
+      }
+      s.rowIndex = (s.rowIndex + delta + n) % n;
+      applyOrder(s);
+      focusChanged(false);
+      maybeLoadMore(s);
+    }
 
+    function handleKey(action) {
+      var s = active();
+      switch (action) {
+        case "LEFT":
+          moveHorizontal(-1);
+          return true;
+        case "RIGHT":
+          moveHorizontal(1);
+          return true;
+        case "UP":
+          moveVertical(-1);
+          return true;
+        case "DOWN":
+          moveVertical(1);
+          return true;
+        case "OK":
+          openCurrent();
+          return true;
+        case "PLAY":
+        case "PLAYPAUSE":
+          if (s && s.currentItem()) {
+            XTV.player.play(s.currentItem());
+          }
+          return true;
+        case "BACK":
+          if (activeName && activeName !== "home") {
+            goHome(false);
+          } else {
+            XTV.actions.confirmExit();
+          }
+          return true;
+      }
+      return false;
+    }
 
-}
+    XTV.grid = {
+      goHome: goHome,
+      showCineclub: showCineclub,
+      showList: showList,
+      reloadList: reloadList,
+      handleKey: handleKey,
+      syncFocusClass: syncFocusClass,
+      activeName: function () {
+        return activeName;
+      },
+      currentItem: function () {
+        var s = active();
+        return s ? s.currentItem() : null;
+      },
+      refocus: function () {
+        focusChanged(false);
+      }
+    };
+  })(window.jQuery, window.XTV);
 
+  /*
+   * Xiclos TV v2 - acciones: ficha de película, Mi lista, géneros,
+   * salir y cerrar sesión.
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
 
-function isAlumno(subscriptions) {
-    for (var i = 0; i < subscriptions.length; i++) {
-        var su = subscriptions[i];
-        if (
-            su.su_name == "EXCLUSIVOALUMNOS01" ||
-            su.su_name == "EXCLUSIVOALUMNOS01ANTIGUO"
-        )
+    var P = XTV.paths;
+    var util = XTV.util;
+    var modal = XTV.modal;
+
+    /* ======================================================================
+     * Ficha de película (VER AHORA / MI LISTA)
+     * ==================================================================== */
+    function openMovie(item, context) {
+      var gen = ++openMovie.gen;
+      XTV.busy.start("movie", function () {
+        XTV.api.abort("movie");
+      });
+      XTV.api
+        .get(P.checkBookmark, { movieid: item.movieId }, "movie")
+        .done(function (res) {
+          if (gen !== openMovie.gen) {
+            return;
+          }
+          XTV.busy.end("movie");
+          var data = res && res.data;
+          var bookmarked = !!(data && data[0] && String(data[0].bookmark) === "1");
+          showMovieModal(item, context, bookmarked, true);
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== openMovie.gen) {
+            return;
+          }
+          XTV.busy.end("movie");
+          XTV.log.error("checkBookmark", xhr, { movieId: item.movieId });
+          // Sin el estado de Mi lista igual se puede ver la película
+          showMovieModal(item, context, false, false);
+        });
+    }
+    openMovie.gen = 0;
+
+    function bookmarkLabel(bookmarked) {
+      return bookmarked ? "QUITAR DE MI LISTA" : "AGREGAR A MI LISTA";
+    }
+
+    function showMovieModal(item, context, bookmarked, canBookmark) {
+      var changed = false;
+      var saving = false;
+      var $el = $('<div id="modalConfirmAction" class="modal"></div>');
+      var $confirm = $('<p id="confirm" class="bookmarkModal"></p>');
+      var poster = String(item.poster || "").replace("-205x347", "");
+      if (poster) {
+        $confirm.append($('<img alt="">').attr("src", poster));
+      }
+      $confirm.append($('<p class="moviename"></p>').text(util.plain(item.title)));
+      var $play = $('<button id="playMovie" class="confirmField bookmarkButton"></button>').text(
+        "VER AHORA"
+      );
+      $confirm.append($play);
+      var $bookmark = null;
+      if (canBookmark) {
+        $bookmark = $('<button id="manageBookmark" class="confirmField bookmarkButton"></button>')
+          .text(bookmarkLabel(bookmarked))
+          .toggleClass("bookmarked", bookmarked);
+        $confirm.append($bookmark);
+      }
+      $el.append($confirm);
+
+      function toggleBookmark() {
+        if (saving) {
+          return;
+        }
+        saving = true;
+        XTV.loader.show("bookmark");
+        XTV.api
+          .request({
+            method: bookmarked ? "DELETE" : "PUT",
+            url: P.setBookmark,
+            query: { movieId: item.movieId },
+            scope: "bookmark"
+          })
+          .done(function () {
+            bookmarked = !bookmarked;
+            changed = true;
+            if ($bookmark) {
+              $bookmark.text(bookmarkLabel(bookmarked)).toggleClass("bookmarked", bookmarked);
+            }
+          })
+          .fail(function (xhr, textStatus) {
+            if (XTV.api.isAbort(xhr, textStatus)) {
+              return;
+            }
+            XTV.log.error("setBookmark", xhr, { movieId: item.movieId });
+            XTV.message.show("No pudimos actualizar tu lista. Probá de nuevo en unos minutos.");
+          })
+          .always(function () {
+            saving = false;
+            XTV.loader.hide("bookmark");
+          });
+      }
+
+      modal.open({
+        $el: $el,
+        items: ".confirmField",
+        focus: $play.get(0),
+        onActivate: function (el) {
+          if (el === $play.get(0)) {
+            modal.close(true);
+            XTV.player.play(item);
+          } else {
+            toggleBookmark();
+          }
+        },
+        onClose: function () {
+          // Si se sacó una película de "Mi selección", la lista se actualiza
+          if (changed && context && context.listType === "bookmark") {
+            XTV.grid.reloadList();
+          }
+        },
+        onKey: function (action) {
+          if (action === "PLAY" || action === "PLAYPAUSE") {
+            modal.close(true);
+            XTV.player.play(item);
             return true;
-    }
-    return false;
-}
-
-function getStripsSuccess(resultData, offset) {
-    console.log("START GET STRIPTS", offset, new Date())
-
-    const result = resultData.data
-    ext = result.length + offset;
-
-    if ($("#newMenu").length === 0) {
-        $("#result").after("<div id='newMenu' onmouseover='setMenuFocus()' onmouseout='setMenuFocusOff()'></div>");
-
-        function addMenuItem(id, imgSrc, text, onClick) {
-            $('#newMenu').append(`
-                    <img src="${imgSrc}" class="icon" id="${id}" 
-                         onmouseover="menuFocusDelay('${id}')" 
-                         onmouseout="outOfMenuFocus('${id}')" 
-                         onclick="${onClick}" 
-                         style="cursor: pointer;">
-                    <p class="menuTitle">${text}</p>
-            `);
+          }
+          return false;
         }
+      });
+    }
 
-        addMenuItem("buscar", getPathDomain() + "/tv/common/img/buscar.png", "Buscar", "search()");
-        addMenuItem("home", getPathDomain() + "/tv/common/img/home.png", "Inicio", "returnHome()");
-        //addMenuItem("favoritos", "../common/img/favoritos.png", "Mis favoritos", "performSearch(0,'bookmark')");
-        addMenuItem("cineclub", getPathDomain() + "/tv/common/img/cineclub.png", "Cineclub", "getCineclub()");
-        addMenuItem("explorar", getPathDomain() + "/tv/common/img/explorar.png", "Explorar", "getGenreList()");
-
-        var user = localStorage.getItem("xiclos_sync");
-        user = user && JSON.parse(user);
-
-        if (user && user.User && user.User.subscriptions) {
-            console.log("USER", user.User.subscriptions[0], isAlumno);
-            const _isAlumno = isAlumno(user.User.subscriptions);
-            if (_isAlumno) {
-                addMenuItem("alumnos", getPathDomain() + "/tv/common/img/exclusivo.png", "Exclusivos", "studentsOnly()");
+    /* ======================================================================
+     * Explorar por género
+     * ==================================================================== */
+    function genres() {
+      var gen = ++genres.gen;
+      XTV.busy.start("genres", function () {
+        XTV.api.abort("genres");
+      });
+      XTV.api
+        .get(P.genresList, { type: "Género" }, "genres")
+        .done(function (res) {
+          if (gen !== genres.gen) {
+            return;
+          }
+          XTV.busy.end("genres");
+          var data = (res && res.data) || [];
+          if (!data.length) {
+            modal.alert({ message: "No hay géneros disponibles en este momento." });
+            return;
+          }
+          var $el = $('<div id="modalGenreList" class="modal"></div>');
+          modal.decorate($el);
+          $el.append('<p class="moviename">EXPLORAR POR GÉNERO</p>');
+          var $confirm = $('<p id="confirm" class="bookmarkGenreList"></p>');
+          for (var i = 0; i < data.length; i++) {
+            $confirm.append(
+              $('<button class="confirmField genreList"></button>')
+                .text(util.plain(data[i].genre).toUpperCase())
+                .attr("data-index", i)
+            );
+          }
+          $el.append($confirm);
+          modal.open({
+            $el: $el,
+            items: ".confirmField",
+            onActivate: function (el) {
+              var g = data[parseInt($(el).attr("data-index"), 10)];
+              modal.close(true);
+              XTV.grid.showList({ type: "genre", genreId: g.genreId, genreName: util.plain(g.genre) });
             }
+          });
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== genres.gen) {
+            return;
+          }
+          XTV.busy.end("genres");
+          XTV.log.error("genresList", xhr);
+          XTV.message.show("No pudimos cargar los géneros. Probá de nuevo en unos minutos.");
+        });
+    }
+    genres.gen = 0;
+
+    /* ======================================================================
+     * Salir y cerrar sesión
+     * ==================================================================== */
+    function confirmExit() {
+      modal.confirm({
+        message: "¿Realmente querés cerrar Xiclos?",
+        onYes: function () {
+          XTV.platform.exit();
         }
-
-        addMenuItem("salir", getPathDomain() + "/tv/common/img/salir.png", "Salir", "hideAppConfirm()");
-        addMenuItem("cerrar_sesion", getPathDomain() + "/tv/common/img/cerrar_sesion.png", "Cerrar sesión", "logoutConfirm()");
+      });
     }
 
-    if ($("#mainContent").length === 0) {
-        $("#result").after("<div id='mainContent'>");
-    }
-
-    if ($("#header").length == 0) {
-        $("#mainContent").append("<div id='header'>");
-    }
-    if ($("#grid").length == 0) {
-        $("#mainContent").append("<div id='grid'>");
-    }
-
-    localStorage.setItem("published_strips", ext);
-    /*    if(offset==0){
-            setArrows();
+    function confirmLogout() {
+      modal.confirm({
+        message:
+          "¿Realmente querés cerrar tu sesión en Xiclos? Si cerrás tu sesión deberás volver a sincronizar tu dispositivo para disfrutar Xiclos nuevamente.",
+        onYes: function () {
+          XTV.login.logout();
         }
-    */
-    //setStripStructure();
-    var myEndRow = 0;
-    for (i = offset; i < ext; i++) {
-        let sl = result[i - offset]
-
-        $("#grid").append("<div id='gridContent" + i + "' class='gridContent' sortId=" + i + ">");
-        $("#gridContent" + i).append("<div id='headlineButton' class='verticalRectangle'></div>");
-        $("#gridContent" + i).append("<div id='stripTitle' class='stripTitle'>" + sl.tira);
-        $("#gridContent" + i).append("<div id='content" + i + "' class='content' sortId=" + i + ">");
-        //RECORRO DETALLES
-        var detailLength = sl.detalle.length;
-        let firstElement = "";
-        let lastElement = "";
-
-        for (j = 0; j < detailLength; j++) {
-
-            myEndRow++;
-
-            if (j == 0) {
-                firstElement = 'firstElement';
-            } else if (j == detailLength - 1 && j != 0) {
-                lastElement = 'lastElement';
-            } else {
-                firstElement = '';
-                lastElement = '';
-            }
-
-            if (j == 0 && i == 0) {
-                var onFocus = 'onFocus';
-            } else {
-                onFocus = '';
-            }
-
-            $("#content" + i).append("<div id='box" + myEndRow + i + j + "' class='box " + firstElement + " " + lastElement + " " + onFocus + "' prodId='" + sl.detalle[j].movieId + "' mediaId='" + sl.detalle[j].mediaId + "' pindex='" + i + "'  onmouseover='focusDelay(\"" + 'box' + myEndRow + i + j + "\")' onmouseout='outOfFocus(\"" + 'box' + myEndRow + i + j + "\")'>");
-            $("#box" + myEndRow + i + j).append("<img id='img" + myEndRow + i + j + "' class='poster' src='" + sl.detalle[j].poster + "'>");
-            $("#box" + myEndRow + i + j).append("<div class='posterTitle'>" + sl.detalle[j].title + "</div>")
-
-            $("#header").append("<div id='prodDetails" + myEndRow + i + j + "' class='prodDetails'>");
-            //$("#prodDetails" + myEndRow + i).append("<div class='trapezium2'></div>");
-            //$("#prodDetails" + myEndRow + i).append("<img id='prodPoster"+myEndRow + i+"'class='prodPoster' src='"+getPathDomain()+sl.detalle[j].poster.replace('-205x347','')+"'></img>")
-            $("#prodDetails" + myEndRow + i + j).append("<div id='detailsContainer" + myEndRow + i + j + "' class='detailsContainer'></div>'");
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodTitle'>" + sl.detalle[j].title + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodSinopsis'>" + sl.detalle[j].sinopsis + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>" + sl.detalle[j].audience + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDuration'>" + sl.detalle[j].duration + " minutos</div>")
-            // $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>"+sl.detalle[j].language.replace('"','') +"</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodYear'>" + sl.detalle[j].year + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodIMDB highlight'>IMDB: " + sl.detalle[j].imdb + "</div>")
-            $("#detailsContainer" + myEndRow + i + j).append("<div style='clear:both'><br />");
-
-            if (sl.detalle[j].genres.length !== 0) {
-                var genres = String(sl.detalle[j].genres);
-                genres = genres.replace(/,/g, ", ");
-                $("#detailsContainer" + myEndRow + i + j).append("<div class='prodGenres'><span class='highlight'>Géneros:</span> " + genres + "</div>")
-            }
-
-            var director = String(sl.detalle[j].director);
-            director = director.replace(/,/g, ", ");
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDirector'><span class='highlight'>Director:</span> " + director + "</div>")
-
-            var actors = String(sl.detalle[j].actors);
-            actors = actors.replace(/,/g, ", ");
-            $("#detailsContainer" + myEndRow + i + j).append("<div class='prodActors'><span class='highlight'>Elenco:</span> " + actors + "</div> <br />")
-
-            if (j == 0 && i == 0) {
-                showProdDetails();
-
-            }
-
-        }
-
-    }
-    console.log("OFFSET", offset)
-    if (offset == 0) {
-
-        setTimeout(function() {
-          unsetLoader()
-        }, 5000);
+      });
     }
 
-    console.log("END GET STRIPTS", offset, new Date())
-
-}
-
-function getStrips() {
-    setLoader();
-    var urlStrips = getPathHome();
-
-
-    $("#div_vimeo_player").css("display", "block");
-    $("#mainContainer").css("display", "block");
-    $("#result").css("display", "block");
-    $("#logoXiclos").css("display", "block");
-    $(".trapezium2").css("display", "block");
-    $(".trapezium").css("display", "block");
-    $(".triangle").css("display", "block");
-
-    //Establezco el número máximo de tiras publicadas
-    const userSync = JSON.parse(localStorage.getItem("xiclos_sync"))
-    $.ajax({
-        url: `${urlStrips}?offset=0&limit=4&userList=true`,
-        headers: {
-            Authorization: "TV",
-            U: JSON.stringify(userSync.User)
-        },
-        dataType: "json",
-        type: "GET",
-        success: (data) => {
-            getStripsSuccess(data, 0)
-            $.ajax({
-                url: `${urlStrips}?offset=4&limit=1000`,
-                headers: {
-                    Authorization: "TV",
-                    U: JSON.stringify(userSync.User)
-                },
-                dataType: "json",
-                type: "GET",
-                success: (data) => getStripsSuccess(data, 4),
-                error: function(response) {
-                    logAction("getStrips", response, {
-                        msg: "Error on GET getStrips",
-                        url: `${urlStrips}?offset=0&limit=4`
-                    }, "error")
-
-                }
-            });
-        },
-        error: function(response) {
-            logAction("getStrips", response, {
-                msg: "Error on GET getStrips",
-                url: `${urlStrips}?offset=0&limit=4`
-            }, "error")
-
-            unsetLoader();
-        }
-    });
-
-
-
-}
-
-function getCineclub() {
-    setLoader();
-    var urlStrips = getPathCineclub();
-
-
-    //Establezco el número máximo de tiras publicadas
-    const userSync = JSON.parse(localStorage.getItem("xiclos_sync"))
-
-
-
-            $(".onFocus").removeClass("onFocus");
-
-            if ($("#newMenu").hasClass("newMenuActive")) {
-
-                $("#newMenu").removeClass("newMenuActive");
-                $(".menuTitle").css("display", "none");
-            }
-
-
-    $.ajax({
-        url: `${urlStrips}?videoclub=1`,
-        headers: {
-            Authorization: "TV",
-            U: JSON.stringify(userSync.User)
-        },
-        dataType: "json",
-        type: "GET",
-        success: function(resultData) {
-            const result = resultData.data
-            $("#header").remove();
-            $("#grid").remove();
-
-
-            if ($("#header").length == 0) {
-                $("#mainContent").append("<div id='header'>");
-            }
-            if ($("#grid").length == 0) {
-                $("#mainContent").append("<div id='grid' class='cineclub'>");
-            }
-
-            console.log('result cineclub: ', result);
-            //setArrows();
-
-            ext = result.length;
-            let firstElement = "";
-            let lastElement = "";
-
-
-
-            var myEndRow = 0;
-            for (i = 0; i < ext; i++) {
-
-                $("#grid").append("<div id='gridContent" + i + "' class='gridContent' sortId=" + i + ">");
-                $("#gridContent" + i).append("<div id='headlineButton' class='verticalRectangle'></div>");
-                $("#gridContent" + i).append("<div id='stripTitle' class='stripTitle'>" + result[i].tira);
-                $("#gridContent" + i).append("<div id='content" + i + "' class='content' sortId=" + i + ">");
-                //RECORRO DETALLES
-                var detailLength = result[i].detalle.length;
-                let firstElement = "";
-                let lastElement = "";
-
-                for (j = 0; j < detailLength; j++) {
-
-                    myEndRow++;
-
-
-                    if (j == 0) {
-                        firstElement = 'firstElement';
-                    } else if (j == detailLength - 1 && j != 0) {
-                        lastElement = 'lastElement';
-                    } else {
-                        firstElement = '';
-                        lastElement = '';
-                    }
-
-                    if (j == 0 && i == 0) {
-                        var onFocus = 'onFocus';
-                    } else {
-                        onFocus = '';
-                    }    
-
-                    $("#content" + i).append("<div id='box" + myEndRow + i + j + "' class='box  " + firstElement + " " + lastElement + " " + onFocus + "' prodId='" + result[i].detalle[j].movieId + "' mediaId='" + result[i].detalle[j].mediaId + "' pindex='" + i + "'  onmouseover='focusDelay(\"" + 'box' + myEndRow + i + j + "\")' onmouseout='outOfFocus(\"" + 'box' + myEndRow + i + j + "\")'>");
-                    $("#box" + myEndRow + i + j).append("<img id='img" + myEndRow + i + j + "' class='poster' src='" + result[i].detalle[j].poster + "'>");
-                    $("#box" + myEndRow + i + j).append("<div class='posterTitle'>" + result[i].detalle[j].title + "</div>")
-
-                    $("#header").append("<div id='prodDetails" + myEndRow + i + j + "' class='prodDetails'>");
-
-                    $("#prodDetails" + myEndRow + i + j).append("<div id='detailsContainer" + myEndRow + i + j + "' class='detailsContainer'></div>'");
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodTitle'>" + result[i].detalle[j].title + "</div>")
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodSinopsis'>" + result[i].detalle[j].sinopsis + "</div>")
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodAudience'>" + result[i].detalle[j].audience + "</div>")
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDuration'>" + result[i].detalle[j].duration + " minutos</div>")
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodYear'>" + result[i].detalle[j].year + "</div>")
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodIMDB highlight'>IMDB: " + result[i].detalle[j].imdb + "</div>")
-                    $("#detailsContainer" + myEndRow + i + j).append("<div style='clear:both'><br />");
-
-                    if (result[i].detalle[j].genres.length !== 0) {
-                        var genres = String(result[i].detalle[j].genres);   
-                        genres = genres.replace(/,/g, ", ");
-                        $("#detailsContainer" + myEndRow + i + j).append("<div class='prodGenres'><span class='highlight'>Géneros:</span> " + genres + "</div>")
-                    }
-
-                    var director = String(result[i].detalle[j].director);
-                    director = director.replace(/,/g, ", ");
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodDirector'><span class='highlight'>Director:</span>" + director + "</div>")
-
-                    var actors = String(result[i].detalle[j].actors);
-                    actors = actors.replace(/,/g, ", ");
-                    $("#detailsContainer" + myEndRow + i + j).append("<div class='prodActors'><span class='highlight'>Elenco:</span> " + actors + "</div> <br />")
-                    
-
-            if (j == 0 && i == 0) {
-                showProdDetails();
-
-            }
-
-                }
-
-            }
-
-            setTimeout(function() {
-                $("#modal").remove();
-            }, 3000);
-            curLevel = level.BODY;
-            
-            setFocusFirstElement(); //      setFocus();
-
-
-        },
-        error: function(response) {
-            logAction("getCineclub", response, {
-                msg: "Error on GET getCineclub",
-                url: `${urlStrips}?videoclub=1`
-            }, "error")
-
-            unsetLoader();
-        }
-    });
-}
-
-
-
-function searchByGenre(genreid) {
-    performSearch(genreid, "genre");
-}
-
-function showProdDetails() {
-    $(".prodDetails").css("display", "none");
-    var myID = $(".onFocus").attr('id');
-    if (myID) {
-        var detailID = myID;
-        localStorage.setItem("focusedBox", myID);
-
-        myID = myID.replace("box", "", myID)
-
-        $("#prodDetails" + myID).css("opacity", 0).css("display", "block").animate({
-            opacity: 1
-        }, 500)
-
-        $("#searchProdDetails" + myID).css("display", "block");
-        var src = $('#img' + myID).attr('src');
-        $("#mainContainer").css("background", "url('" + src + "')");
-        $("#mainContainer").css("background-repeat", "no-repeat");
-        $("#mainContainer").css("background-position", "0px 25%");
-        $("#mainContainer").css("background-size", "cover");
-
-        var videoId = $('#box' + myID).attr('mediaId');
-        var prodId = $('#box' + myID).attr('prodid');
-        $('.box.onFocus').attr("onclick", "setAction('" + videoId + "'," + prodId + ",'" + detailID + "')");
-    }
-
-
-}
-
-
-//A CONFIRMAR USO
-function exploreFocus(pid) {
-    $('.onHover').removeClass('onHover');
-    $('.onFocus').removeClass('onFocus');
-    $('.activeExplore').removeClass('activeExplore');
-    $("#" + pid).addClass('onHover');
-
-    var myOnclick = $("#" + pid).attr('clickparam');
-
-    $("#" + pid).attr("onclick", "getGenreSearch('" + myOnclick + "')")
-    // console.log('in: #'+pid);
-    $('.onHover').addClass('onFocus');
-    $('.onFocus').attr("cursor", "pointer");
-    $('.onFocus').addClass('activeExplore');
-}
-
-function exploreFocusDelay(pid) {
-    timeout = setTimeout(
-        function() {
-            exploreFocus(pid);
-        }, 1000);
-}
-
-function outOfExploreFocus(pid) {
-    $("#" + pid).removeClass('onHover');
-    $("#" + pid).removeAttr("onclick");
-    clearTimeout(timeout);
-}
-
-
-//OTHERS
-function getNextStrip() {
-    num = JSON.parse(localStorage.getItem("last_charged_strip"));
-    //getEachStrip(num + 1);
-    localStorage.setItem("last_charged_strip", num + 1);
-}
-
-
-//FAVORITOS
-function createLinkBookmark(psid, classpremium) {
-    console.log("createLinkBookmark");
-    myString = "addBookmark(" + psid + ',' + '"' + classpremium + '"' + ")";
-    return (myString);
-}
-
-function createLinkPlay(psid) {
-    console.log("createLinkPlay");
-    myString = "playProd(" + psid + ")";
-    return (myString);
+    XTV.actions = {
+      openMovie: openMovie,
+      genres: genres,
+      confirmExit: confirmExit,
+      confirmLogout: confirmLogout
+    };
+  })(window.jQuery, window.XTV);
 }

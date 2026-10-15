@@ -2069,3 +2069,279 @@ li {
 .jwplayer {
   z-index: 10;
 }
+
+/* ===== Xiclos TV v2 =====
+ * Agregado para la v2. La app de Amazon no carga este archivo.
+ * ===================================================================== */
+
+/* ---------------------------------------------------------------
+ * Compatibilidad con TVs 2017-2018 (Chromium 38 a 56)
+ * --------------------------------------------------------------- */
+
+/* El menú usaba display: grid (Chromium 57+). Con flex en columna y
+   space-around se obtiene la misma distribución de íconos. */
+#newMenu {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-justify-content: space-around;
+  justify-content: space-around;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+  /* Colores de 8 dígitos (#000000d6) no existen antes de Chromium 62 */
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.84) 85%, rgba(0, 0, 0, 0) 100%);
+}
+
+.newMenuActive {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.93) 85%, rgba(0, 0, 0, 0) 100%) !important;
+}
+
+@media only screen and (max-width: 1280px) {
+  #newMenu {
+    display: -webkit-flex;
+    display: flex;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.84) 85%, rgba(0, 0, 0, 0) 100%);
+  }
+}
+
+.modalTrapezium2 {
+  border-color: rgba(33, 31, 31, 0.69) rgba(68, 23, 23, 0) !important;
+}
+
+/* width: max-content no existe antes de Chromium 46 (el JS además fija
+   el ancho de cada tira). */
+.content {
+  width: -webkit-max-content;
+  width: max-content;
+}
+
+/* ---------------------------------------------------------------
+ * Navegación
+ * --------------------------------------------------------------- */
+
+/* Desplazamiento de las tiras con transform (más liviano que margin) */
+.content {
+  -webkit-transition: -webkit-transform 0.15s ease-out;
+  transition: transform 0.15s ease-out;
+}
+
+/* Lugar reservado mientras carga el póster */
+.box .poster {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+#mainContent .prodDetails {
+  display: block;
+}
+
+/* ---------------------------------------------------------------
+ * Búsqueda predictiva (#xtvSearch)
+ * Medidas en vw para que se vea igual en 1920x1080 y 1280x720.
+ * --------------------------------------------------------------- */
+#xtvSearch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 450;
+  background: #1b1b1b;
+  color: #fff;
+  font-family: Roboto, Arial, sans-serif;
+  overflow: hidden;
+}
+.xtv-layer-video #xtvSearch {
+  display: none;
+}
+#xtvSearch .xs-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 34%;
+  padding: 4.2vw 2vw 0 3.2vw;
+  box-sizing: border-box;
+  background: #141414;
+}
+#xtvSearch .xs-title {
+  font-size: 1.4vw;
+  letter-spacing: 0.15vw;
+  color: #aaa;
+  margin-bottom: 1.2vw;
+}
+#xtvSearch .xs-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: #2a2a2a;
+  border: none;
+  border-bottom: 0.2vw solid #eb564a;
+  color: #fff;
+  font-size: 1.9vw;
+  height: 3.6vw;
+  padding: 0 1vw;
+  margin: 0 0 1.6vw 0;
+  font-family: Roboto, Arial, sans-serif;
+  letter-spacing: 0.1vw;
+  text-align: left;
+  text-indent: 0;
+  outline: none;
+}
+#xtvSearch .xs-input.ime {
+  background: #3a3a3a;
+}
+#xtvSearch .xs-keys {
+  overflow: hidden;
+}
+#xtvSearch .xs-key {
+  float: left;
+  width: -webkit-calc(16.666% - 0.5vw);
+  width: calc(16.666% - 0.5vw);
+  margin: 0 0.5vw 0.5vw 0;
+  height: 3.1vw;
+  line-height: 3.1vw;
+  text-align: center;
+  background: #2e2e2e;
+  color: #ddd;
+  font-size: 1.35vw;
+  border-radius: 0.2vw;
+  cursor: pointer;
+}
+#xtvSearch .xs-key.w2 {
+  width: -webkit-calc(33.333% - 0.5vw);
+  width: calc(33.333% - 0.5vw);
+}
+#xtvSearch .xs-key.w3 {
+  width: -webkit-calc(50% - 0.5vw);
+  width: calc(50% - 0.5vw);
+}
+#xtvSearch .xs-key.small {
+  font-size: 0.95vw;
+  letter-spacing: 0.05vw;
+}
+#xtvSearch .xs-key.onFocus {
+  background: #eb564a;
+  color: #fff;
+}
+#xtvSearch .xs-right {
+  position: absolute;
+  left: 34%;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  padding: 4.2vw 3vw 0 2.5vw;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#xtvSearch .xs-status {
+  font-size: 1.1vw;
+  color: #999;
+  height: 1.6vw;
+  margin-bottom: 0.6vw;
+}
+#xtvSearch .xs-body {
+  position: relative;
+  -webkit-transition: -webkit-transform 0.15s ease-out;
+  transition: transform 0.15s ease-out;
+}
+#xtvSearch .xs-label {
+  font-size: 1.1vw;
+  color: #bbb;
+  letter-spacing: 0.12vw;
+  text-transform: uppercase;
+  margin: 0 0 0.8vw 0;
+  padding: 0;
+}
+#xtvSearch .xs-hint {
+  font-size: 1.3vw;
+  color: #888;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+#xtvSearch .xs-people {
+  overflow: hidden;
+  margin-bottom: 1.4vw;
+}
+#xtvSearch .xs-person {
+  float: left;
+  background: #2e2e2e;
+  border-radius: 2vw;
+  padding: 0.55vw 1.2vw;
+  margin: 0 0.7vw 0.7vw 0;
+  font-size: 1.15vw;
+  cursor: pointer;
+}
+#xtvSearch .xs-person .role {
+  color: #eb564a;
+  font-size: 0.85vw;
+  margin-left: 0.6vw;
+}
+#xtvSearch .xs-person.onFocus {
+  background: #eb564a;
+}
+#xtvSearch .xs-person.onFocus .role {
+  color: #fff;
+}
+#xtvSearch .xs-movies {
+  overflow: hidden;
+}
+#xtvSearch .xs-movie {
+  float: left;
+  width: -webkit-calc(20% - 1vw);
+  width: calc(20% - 1vw);
+  margin: 0 1vw 1.2vw 0;
+  cursor: pointer;
+}
+#xtvSearch .xs-movie .ph {
+  position: relative;
+  width: 100%;
+  padding-top: 150%;
+  background: rgba(255, 255, 255, 0.06);
+}
+#xtvSearch .xs-movie img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+#xtvSearch .xs-movie .t {
+  font-size: 0.95vw;
+  text-align: center;
+  margin-top: 0.5vw;
+  height: 2.6vw;
+  overflow: hidden;
+  color: #ddd;
+}
+#xtvSearch .xs-movie.onFocus .ph {
+  outline: 0.25vw solid #eb564a;
+}
+#xtvSearch .xs-recent {
+  font-size: 1.4vw;
+  padding: 0.7vw 1vw;
+  margin-bottom: 0.4vw;
+  color: #ddd;
+  border-left: 0.2vw solid transparent;
+  cursor: pointer;
+}
+#xtvSearch .xs-recent.onFocus {
+  color: #eb564a;
+  border-left-color: #eb564a;
+  background: rgba(255, 255, 255, 0.04);
+}
+#xtvSearch .xs-recent.clear {
+  font-size: 1.05vw;
+  color: #999;
+  margin-top: 1vw;
+}
+#xtvSearch .xs-recent.clear.onFocus {
+  color: #eb564a;
+}
+#xtvSearch .xs-logo {
+  position: absolute;
+  top: 1.6vw;
+  right: 2.1vw;
+  height: 4.8vw;
+}

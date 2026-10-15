@@ -1,611 +1,474 @@
-var VK_ENTER = 13;
-var VK_PAUSE = 19;
-var VK_PAGE_UP = 33;
-var VK_PAGE_DOWN = 34;
-var VK_LEFT = 37;
-var VK_UP = 38;
-var VK_RIGHT = 39;
-var VK_DOWN = 40;
-var VK_0 = 48;
-var VK_1 = 49;
-var VK_2 = 50;
-var VK_3 = 51;
-var VK_4 = 52;
-var VK_5 = 53;
-var VK_6 = 54;
-var VK_7 = 55;
-var VK_8 = 56;
-var VK_9 = 57;
-var VK_D = 68;
-var VK_RED = 403;
-var VK_GREEN = 404;
-var VK_YELLOW = 405;
-var VK_BLUE = 406;
-var VK_REWIND = 412;
-var VK_STOP = 413;
-var VK_PLAY = 415;
-var VK_FAST_FWD = 417;
-var VK_INFO = 457;
-var VK_BACK = 461;
-var VK_DONE = 65376;
-var VK_RETURN = 10009;
-var VK_RETURNHUB = 65385;
-var VK_EXIT = 10182;
-var VK_CAPTION = 10221;
-var VK_ESCAPE = 27;
-var VK_SPACE = 32;
-
-var renderCaptionsNativelyVar = true;
-if (navigator.userAgent.match(/chrome|chromium|crios/i)) {
-  console.log("IF userAgent function");
-  console.log("UserAgent: ", navigator.userAgent);
-  console.log(getPathLogErrorNotification());
-  renderCaptionsNativelyVar = false;
+/*
+ * Xiclos TV v2 - reproductor
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * En Amazon (mientras siga con la versión anterior) carga la copia de common/legacy/js/JCPlayer.js.
+ * ES5 puro.
+ */
+if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
+  window.XTV_BOOT.load("JCPlayer.js");
 } else {
-  console.log("Else userAgent function");
-  console.log("UserAgent: ", navigator.userAgent);
-  renderCaptionsNativelyVar = true;
-}
-var isLGTV = false;
-if (navigator.userAgent.match(/WebOS|webOS|webos|Web0S|web0s|web0S/i)) {
-  isLGTV = true;
-}
+  /*
+   * Xiclos TV v2 - reproductor (reemplaza JCPlayer.js)
+   *
+   * - Volver o Stop durante la carga cancela: la película no arranca después.
+   * - Teclas: OK / Play / Pausa / Play-Pausa, izquierda-derecha (10 s),
+   *   adelantar-retroceder (30 s), azul (subtítulos), Volver / Stop (salir).
+   * - El progreso se guarda cada 15 s, al pausar y al salir. Al pasar el
+   *   95 % se borra del historial, como antes.
+   *
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
 
-console.log("Outside userAgent function");
+    var C = XTV.config;
+    var P = XTV.paths;
+    var CONTAINER_ID = "div_vimeo_player";
 
-function JCPlayer() {
-  this.debug = false;
-  this.delayedSeek = false;
-  this.verbose = false;
-  this.initialSeek = null;
-  this.heartbeatURL = null;
-  this.heartbeatInterval = 60;
-  this.heartbeatOnPause = true;
-  this.heartbeatOnSeek = true;
-  this.heartbeatOnEnd = true;
-  this.heartbeatOnInterval = true;
-  this.heartbeatOnDestroy = true;
-  this.HEARTBEAT_TEMPLATE_SECONDS = "__SECONDS__";
-  this.DEBUG_DIV_ID = "jcplayer_debug_id";
+    var ua = navigator.userAgent || "";
+    var isLG = /web0s|webos/i.test(ua);
+    // Mismo criterio que la versión anterior
+    var renderCaptionsNatively = !/chrome|chromium|crios/i.test(ua);
 
-  var _lastHeartbeat = 0;
-  var that = this;
-  var _player = null;
-  var _trackCurrent = -1;
+    var session = null; // reproducción en curso
+    var gen = 0;
+    var library = null;
 
-  this.onPlay = function (event) {};
-  this.onPause = function (event) {};
-  this.onEnded = function (event) {};
-  this.onTimeUpdate = onTimeUpdate.bind(this); //function(event){};
-  this.onHeartbeat = function (event, heartbeat, reason) {};
-
-  this.onKeyDown = function (event) {};
-
-  this.onClose = function () {};
-  this.onUp = function () {};
-  this.onDown = function () {};
-  this.onLeft = function () {};
-  this.onRight = function () {};
-  this.onNumber = function (number) {};
-  this.onPlayPause = function (isPlay) {};
-  this.onStop = function () {};
-
-  this.onButtonRed = function () {};
-  this.onButtonGreen = function () {};
-  this.onButtonYellow = function () {};
-
-  this.onButtonBlue = onButtonBlue.bind(this);
-
-  function _doDebugOutput(msg) {
-    var divElem = document.getElementById(that.DEBUG_DIV_ID);
-    if (divElem) {
-      divElem.innerHTML += msg + "\n";
-      divElem.scrollTop = divElem.scrollHeight;
-    }
-  }
-
-  function _doHandleError(error) {
-    _onError(error, "_doHandleError");
-  }
-
-  function _doHeartbeat(e, reason) {
-    _lastHeartbeat = Math.round(e.seconds);
-    if (that.heartbeatURL !== null) {
-      var url = that.heartbeatURL.replace(
-        that.HEARTBEAT_TEMPLATE_SECONDS,
-        _lastHeartbeat
-      );
-      getCORS(url);
-    }
-    that.onHeartbeat(e, _lastHeartbeat, reason);
-  }
-
-  function _onError(e, description) {
-    description = description || "onErrorEvent";
-
-    m =
-      description +
-      ' {name: "' +
-      e.name +
-      '", method: "' +
-      e.method +
-      '", message: "' +
-      e.message +
-      '"}';
-    _doDebugOutput(m);
-  }
-
-  this.create = function (
-    elementOrId,
-    IdJWMedia,
-    resumePoint,
-    durationMovie,
-    progressIdMovie,
-    movieIdMovie,
-    playerType
-  ) {
-    setLoader();
-    var idMedia = IdJWMedia;
-    var API_JWPLAYER = getPathPlayer();
-    var _url = API_JWPLAYER + idMedia;
-
-    var VIMEO_URL_LINK =
-      "https://us-central1-xiclos-prod.cloudfunctions.net/api/api/v2/vimeo/" +
-      idMedia;
-
-    console.log("ACA", playerType);
-
-    if (playerType == "vimeo") {
-      $.ajax({
-        url: VIMEO_URL_LINK + "?hls=false",
-        type: "GET",
-        success: function (result) {
-          console.log("VIMEO CREATE RESULT", result);
-          _player = jwplayer(elementOrId);
-
-          _player.setup({
-            playlist: [result.data],
-            autostart: false,
-            responsive: true,
-            displayPlaybackLabel: true,
-            renderCaptionsNatively: renderCaptionsNativelyVar,
-            stretching: "uniform"
-          });
-
-          _player.on("play", function () {
-            $("#div_vimeo_player").focus();
-          });
-
-          _player.on("pause", function () {
-            var positionOnPause = _player.getPosition();
-            const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-            var posFloor = Math.floor(positionOnPause);
-            console.log("asdasd", posFloor, durationMovie, posFloor % 15);
-            if (posFloor > durationMovie * 0.95) {
-              console.log(
-                "Borrar progreso .. ID MP PROGRESS ",
-                progressIdMovie
-              );
-              const urlPathDeleteHistory = getPathDeleteHistory();
-              $.ajax({
-                url: urlPathDeleteHistory,
-                headers: {
-                  Authorization: "TV",
-                  U: JSON.stringify(userSync.User)
-                },
-                dataType: "json",
-                data: { id: progressIdMovie },
-                type: "DELETE",
-                success: function () {
-                  console.log("progress deleted - movie finish");
-                },
-                error: function (err) {
-                  console.log("progress deleted", err);
-                }
-              });
-            } else {
-              // actualizar progreso
-              console.log(
-                "ACTULIZO PROGRESO",
-                posFloor,
-                durationMovie,
-                progressIdMovie,
-                movieIdMovie
-              );
-              const urlPathUpdateHistory = getPathUptHistory();
-              $.ajax({
-                url: urlPathUpdateHistory + "?id=" + movieIdMovie,
-                headers: {
-                  Authorization: "TV",
-                  U: JSON.stringify(userSync.User)
-                },
-                dataType: "json",
-                data: { time: posFloor },
-                type: "PUT",
-                success: function () {
-                  console.log("progress updated");
-                },
-                error: function (err) {
-                  console.log("progress updated error", err);
-                }
-              });
-            }
-          });
-
-          _player.on("setupError", function (err) {
-            console.log("onSetupError Jwplayer", err);
-          });
-
-          _player.on("error", function (err) {
-            console.log("onError Jwplayer", err);
-            var urlOnError = getPathLogErrorNotification();
-            var bodyOnError = {
-              message: "onError jwplayer",
-              data: err,
-              type: "ERROR"
-            };
-            $.ajax({
-              url: urlOnError,
-              headers: {
-                Authorization: "TV"
-              },
-              dataType: "json",
-              type: "POST",
-              data: bodyOnError,
-              success: function (result) {
-                console.log("onSetupError logged on notifications DB");
-              },
-              error: function (response) {
-                console.log("onSetupError failed to log");
-                console.log(response);
-              }
-            });
-          });
-
-          _player.on("captionsList", function (trackList) {
-            console.log("CaptionList");
-            if (trackList && trackList.tracks && trackList.tracks.length > 1) {
-              console.log("SetCurrentCaptions");
-              _player.setCurrentCaptions(1);
-            }
-          });
-
-          _player.on("firstFrame", function (ev) {
-            if (isLGTV) {
-              setTimeout(function playTimeOut() {
-                _player.seek(resumePoint);
-              }, 500);
-            } else {
-              _player.seek(resumePoint);
-            }
-          });
-
-          // _player.seek(resumePoint);
-          _player.play();
-
-          onTimeUpdate(durationMovie, progressIdMovie, movieIdMovie);
-
-          unsetLoader();
-        },
-        error: function (response) {
-          console.log("ERROR VIMEO this.create", response);
-          unsetLoader();
-        }
-      });
-    } else {
-      $.ajax({
-        url: _url,
-        type: "GET",
-        success: function (result) {
-          console.log("JCP CREATE RESULT", result);
-          var sources = [];
-          const mp4String = "video/mp4";
-
-          function isSubstring(str, sub) {
-            if (sub.length > str.length) return false;
-            for (var i = 0; i < str.length - sub.length + 1; i++) {
-              if (str[i] !== sub[0]) continue;
-              var exists = true;
-              for (var j = 1; j < sub.length && exists; j++) {
-                if (str[i + j] == sub[j]) continue;
-                exists = false;
-              }
-              if (exists) return true;
-            }
-            return false;
-          }
-
-          for (var i = 0; i < result.playlist[0].sources.length; i++) {
-            if (isSubstring(result.playlist[0].sources[i].type, mp4String)) {
-              if (sources.length == 0) {
-                sources[0] = result.playlist[0].sources[i];
-              } else {
-                sources[sources.length] = result.playlist[0].sources[i];
-              }
-            }
-          }
-          function bubbleSort(array) {
-            var done = false;
-            while (!done) {
-              done = true;
-              for (var i = 1; i < array.length; i += 1) {
-                if (array[i - 1].width < (array[i].width || 0)) {
-                  done = false;
-                  var tmp = array[i - 1];
-                  array[i - 1] = array[i];
-                  array[i] = tmp;
-                }
-              }
-            }
-            return array;
-          }
-          sources = bubbleSort(sources);
-          console.log("JCP SOURCES: ", sources);
-          const tracks = result.playlist[0].tracks;
-          console.log("JCP TRACKS:", tracks);
-          console.log("JCP CREATE RESULT 2", [
-            { sources: sources, tracks: tracks }
-          ]);
-          _player = jwplayer(elementOrId);
-
-          _player.setup({
-            playlist: [{ sources: sources, tracks: tracks }],
-            autostart: false,
-            responsive: true,
-            displayPlaybackLabel: true,
-            renderCaptionsNatively: renderCaptionsNativelyVar,
-            stretching: "uniform"
-          });
-
-          _player.on("play", function () {
-            $("#div_vimeo_player").focus();
-          });
-
-          _player.on("pause", function () {
-            var positionOnPause = _player.getPosition();
-            const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-            var posFloor = Math.floor(positionOnPause);
-            if (posFloor > durationMovie * 0.95) {
-              console.log(
-                "Borrar progreso .. ID MP PROGRESS ",
-                progressIdMovie
-              );
-              const urlPathDeleteHistory = getPathDeleteHistory();
-              $.ajax({
-                url: urlPathDeleteHistory,
-                headers: {
-                  Authorization: "TV",
-                  U: JSON.stringify(userSync.User)
-                },
-                dataType: "json",
-                data: { id: progressIdMovie },
-                type: "DELETE",
-                success: function () {
-                  console.log("progress deleted - movie finish");
-                },
-                error: function (err) {
-                  console.log("progress deleted", err);
-                }
-              });
-            } else {
-              // actualizar progreso
-              console.log(
-                "ACTULIZO PROGRESO",
-                posFloor,
-                durationMovie,
-                progressIdMovie,
-                movieIdMovie
-              );
-              const urlPathUpdateHistory = getPathUptHistory();
-              $.ajax({
-                url: urlPathUpdateHistory + "?id=" + movieIdMovie,
-                headers: {
-                  Authorization: "TV",
-                  U: JSON.stringify(userSync.User)
-                },
-                dataType: "json",
-                data: { time: posFloor },
-                type: "PUT",
-                success: function () {
-                  console.log("progress updated");
-                },
-                error: function (err) {
-                  console.log("progress updated error", err);
-                }
-              });
-            }
-          });
-
-          _player.on("setupError", function (err) {
-            console.log("onSetupError Jwplayer", err);
-          });
-
-          _player.on("error", function (err) {
-            console.log("onError Jwplayer", err);
-            var urlOnError = getPathLogErrorNotification();
-            var bodyOnError = {
-              message: "onError jwplayer",
-              data: err,
-              type: "ERROR"
-            };
-            $.ajax({
-              url: urlOnError,
-              headers: {
-                Authorization: "TV"
-              },
-              dataType: "json",
-              type: "POST",
-              data: bodyOnError,
-              success: function (result) {
-                console.log("onSetupError logged on notifications DB");
-              },
-              error: function (response) {
-                console.log("onSetupError failed to log");
-                console.log(response);
-              }
-            });
-          });
-
-          _player.on("captionsList", function (trackList) {
-            console.log("CaptionList");
-            if (trackList && trackList.tracks && trackList.tracks.length > 1) {
-              console.log("SetCurrentCaptions");
-              _player.setCurrentCaptions(1);
-            }
-          });
-
-          _player.on("firstFrame", function (ev) {
-            if (isLGTV) {
-              setTimeout(function playTimeOut() {
-                _player.seek(resumePoint);
-              }, 500);
-            } else {
-              _player.seek(resumePoint);
-            }
-          });
-
-          _player.seek(resumePoint);
-
-          onTimeUpdate(durationMovie, progressIdMovie, movieIdMovie);
-
-          unsetLoader();
-        },
-        error: function (response) {
-          console.log("ERROR JCPlayer this.create", response);
-          unsetLoader();
-        }
-      });
-    }
-  };
-
-  function onButtonBlue() {
-    var captions = _player.getCaptionsList();
-    var currIndex = _player.getCurrentCaptions();
-    var nextIndex = currIndex + 1;
-    if (nextIndex >= captions.length) {
-      nextIndex = 0;
-    }
-    _player.setCurrentCaptions(nextIndex);
-  }
-
-  function onTimeUpdate(duration, progressId, idMovie) {
-    var verify = true;
-    const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-    setTimeout(function () {
-      _player.on("time", function (e) {
-        const position = e.position;
-        var posFloor = Math.floor(position);
-        if (posFloor > duration * 0.95 && verify) {
-          // borrar progreso
-          console.log("Borrar progreso .. ID MP PROGRESS ", progressId);
-          verify = false;
-          _player.off("time");
-          const urlPathDeleteHistory = getPathDeleteHistory();
-          $.ajax({
-            url: urlPathDeleteHistory,
-            headers: {
-              Authorization: "TV",
-              U: JSON.stringify(userSync.User)
-            },
-            dataType: "json",
-            data: { id: progressId },
-            type: "DELETE",
-            success: function () {
-              console.log("progress deleted - movie finish");
-            },
-            error: function (err) {
-              console.log("progress deleted", err);
-            }
-          });
-          verify = false;
-        } else if (posFloor % 15 == 0 && verify && posFloor < duration - 30) {
-          // actualizar progreso
-          console.log(
-            "ACTULIZO PROGRESO",
-            posFloor,
-            duration,
-            progressId,
-            idMovie
-          );
-          const urlPathUpdateHistory = getPathUptHistory();
-          $.ajax({
-            url: urlPathUpdateHistory + "?id=" + idMovie,
-            headers: {
-              Authorization: "TV",
-              U: JSON.stringify(userSync.User)
-            },
-            dataType: "json",
-            data: { time: posFloor },
-            type: "PUT",
-            success: function () {
-              console.log("progress updated");
-            },
-            error: function (err) {
-              console.log("progress updated error", err);
-            }
-          });
-
-          verify = false;
-          setTimeout(function () {
-            verify = true;
-          }, 1000);
-        }
-      });
-    }, 10000);
-  }
-
-  this.play = function () {
-    if (_player) {
-      try {
-        //_player.play();
-      } catch (e) {
-        _doHandleError(e);
+    function loadLibrary() {
+      if (window.jwplayer) {
+        return $.Deferred().resolve().promise();
       }
-    }
-  };
-
-  this.pause = function () {
-    if (_player) {
-      try {
-        _player.pause();
-      } catch (e) {
-        _doHandleError(e);
+      if (!library || library.state() === "rejected") {
+        library = $.ajax({ url: C.JW_LIBRARY, dataType: "script", cache: true, timeout: 20000 });
       }
+      return library;
     }
-  };
 
-  this.playPause = function () {
-    if (_player) {
+    /* ----------------------------------------------------------------------
+     * Fuentes
+     * -------------------------------------------------------------------- */
+    function isVimeo(mediaId) {
+      return /^\d+$/.test(String(mediaId || ""));
+    }
+
+    function fetchPlaylistItem(mediaId) {
+      var d = $.Deferred();
+      if (isVimeo(mediaId)) {
+        XTV.api
+          .request({ url: C.VIMEO_API + mediaId, query: { hls: false }, scope: "player", headers: false, auth: false })
+          .done(function (res) {
+            if (res && res.data) {
+              d.resolve(res.data);
+            } else {
+              d.reject(null, "empty");
+            }
+          })
+          .fail(function (xhr, textStatus) {
+            d.reject(xhr, textStatus);
+          });
+      } else {
+        XTV.api
+          .request({ url: C.JW_MEDIA_API + mediaId, scope: "player", headers: false, auth: false })
+          .done(function (res) {
+            var item = res && res.playlist && res.playlist[0];
+            if (!item) {
+              d.reject(null, "empty");
+              return;
+            }
+            var sources = [];
+            var all = item.sources || [];
+            for (var i = 0; i < all.length; i++) {
+              if (String(all[i].type || "").indexOf("video/mp4") !== -1) {
+                sources.push(all[i]);
+              }
+            }
+            // Mayor resolución primero (igual que antes)
+            sources.sort(function (a, b) {
+              return (b.width || 0) - (a.width || 0);
+            });
+            d.resolve({ sources: sources, tracks: item.tracks });
+          })
+          .fail(function (xhr, textStatus) {
+            d.reject(xhr, textStatus);
+          });
+      }
+      return d.promise();
+    }
+
+    /* ----------------------------------------------------------------------
+     * Historial / progreso
+     * -------------------------------------------------------------------- */
+    function saveProgress(s, seconds) {
+      if (!s || s.done || !s.tracking) {
+        return;
+      }
+      seconds = Math.floor(seconds);
+      if (seconds <= 0) {
+        return;
+      }
+      s.lastSaved = seconds;
+      XTV.api
+        .request({
+          method: "PUT",
+          url: P.updateHistory,
+          query: { id: s.item.movieId },
+          data: { time: seconds }
+        })
+        .fail(function (xhr, textStatus) {
+          if (!XTV.api.isAbort(xhr, textStatus)) {
+            XTV.log.error("updHistory", xhr, { movieId: s.item.movieId });
+          }
+        });
+    }
+
+    function markDone(s) {
+      if (!s || s.done) {
+        return;
+      }
+      s.done = true;
+      if (s.progressId === undefined || s.progressId === null) {
+        return;
+      }
+      XTV.api
+        .request({ method: "DELETE", url: P.deleteHistory, data: { id: s.progressId } })
+        .fail(function (xhr, textStatus) {
+          if (!XTV.api.isAbort(xhr, textStatus)) {
+            XTV.log.error("deletedHistory", xhr, { progressId: s.progressId });
+          }
+        });
+    }
+
+    function durationOf(s) {
+      var d = 0;
       try {
-        if (_player.getState() == "paused") {
-          _player.play();
+        d = s.player.getDuration();
+      } catch (e) {}
+      if (!(d > 0)) {
+        d = (parseFloat(s.item.duration) || 0) * 60;
+      }
+      return d;
+    }
+
+    /* ----------------------------------------------------------------------
+     * Ciclo de vida
+     * -------------------------------------------------------------------- */
+    function play(item) {
+      if (!item || !item.mediaId) {
+        XTV.message.show("Esta película no está disponible en este momento.");
+        return;
+      }
+      stop(false);
+      var myGen = ++gen;
+      session = {
+        gen: myGen,
+        item: item,
+        player: null,
+        loading: true,
+        resumePoint: 0,
+        progressId: null,
+        lastSaved: 0,
+        tracking: false,
+        done: false
+      };
+      var s = session;
+      XTV.modal.close(true);
+      // Capa a la que se vuelve al salir (grilla o búsqueda)
+      s.returnLayer = XTV.state.layer === "search" ? "search" : "grid";
+      XTV.setLayer("video");
+      XTV.loader.show("player");
+
+      function alive() {
+        return session === s && s.gen === gen;
+      }
+
+      var history = XTV.api.get(P.setHistory, { movieId: item.movieId, resumePoint: 0 }, "player");
+
+      $.when(loadLibrary(), history)
+        .done(function (libArgs, historyArgs) {
+          if (!alive()) {
+            return;
+          }
+          var res = historyArgs && historyArgs[0];
+          var data = (res && res.data) || {};
+          s.resumePoint = Math.max(0, parseFloat(data.resumePoint) || 0);
+          s.progressId = data.progressId;
+          s.lastSaved = s.resumePoint;
+          fetchPlaylistItem(item.mediaId)
+            .done(function (playlistItem) {
+              if (!alive()) {
+                return;
+              }
+              setup(s, playlistItem);
+            })
+            .fail(function (xhr, textStatus) {
+              if (!alive() || XTV.api.isAbort(xhr, textStatus)) {
+                return;
+              }
+              fail(s, "media", xhr);
+            });
+        })
+        .fail(function (xhr, textStatus) {
+          if (!alive() || XTV.api.isAbort(xhr, textStatus)) {
+            return;
+          }
+          fail(s, "setHistory/library", xhr);
+        });
+    }
+
+    function setup(s, playlistItem) {
+      if (typeof window.jwplayer !== "function") {
+        fail(s, "jwplayer-missing", null);
+        return;
+      }
+      $("#" + CONTAINER_ID).css("display", "block");
+      var player = window.jwplayer(CONTAINER_ID);
+      s.player = player;
+      player.setup({
+        playlist: [playlistItem],
+        autostart: false,
+        responsive: true,
+        displayPlaybackLabel: true,
+        renderCaptionsNatively: renderCaptionsNatively,
+        stretching: "uniform"
+      });
+
+      player.on("ready", function () {
+        if (session !== s) {
+          return;
+        }
+        s.loading = false;
+        XTV.loader.hide("player");
+        // Pantalla completa forzada (LG no lo hace sola)
+        try {
+          $(player.getContainer()).addClass("jw-flag-fullscreen");
+        } catch (e) {}
+        player.play();
+      });
+
+      player.on("firstFrame", function () {
+        if (session !== s) {
+          return;
+        }
+        if (s.resumePoint > 5) {
+          var doSeek = function () {
+            if (session === s) {
+              player.seek(s.resumePoint);
+            }
+          };
+          if (isLG) {
+            setTimeout(doSeek, 500);
+          } else {
+            doSeek();
+          }
         } else {
-          _player.pause();
+          s.tracking = true;
         }
-      } catch (e) {
-        _doHandleError(e);
+      });
+
+      player.on("seeked", function () {
+        s.tracking = true;
+      });
+
+      player.on("time", function (e) {
+        if (session !== s || s.done) {
+          return;
+        }
+        var pos = e.position || 0;
+        if (!s.tracking && pos >= s.resumePoint - 5) {
+          s.tracking = true;
+        }
+        if (!s.tracking) {
+          return;
+        }
+        var dur = e.duration > 0 ? e.duration : durationOf(s);
+        if (dur > 0 && pos > dur * C.PROGRESS_DONE_RATIO) {
+          markDone(s);
+          return;
+        }
+        if (Math.abs(pos - s.lastSaved) >= C.PROGRESS_SAVE_SECONDS) {
+          saveProgress(s, pos);
+        }
+      });
+
+      player.on("pause", function () {
+        if (session !== s) {
+          return;
+        }
+        var pos = 0;
+        try {
+          pos = player.getPosition();
+        } catch (e) {}
+        var dur = durationOf(s);
+        if (dur > 0 && pos > dur * C.PROGRESS_DONE_RATIO) {
+          markDone(s);
+        } else {
+          saveProgress(s, pos);
+        }
+      });
+
+      player.on("complete", function () {
+        if (session !== s) {
+          return;
+        }
+        markDone(s);
+        stop(true);
+      });
+
+      player.on("captionsList", function (list) {
+        if (list && list.tracks && list.tracks.length > 1) {
+          try {
+            player.setCurrentCaptions(1);
+          } catch (e) {}
+        }
+      });
+
+      var onError = function (err) {
+        if (session !== s) {
+          return;
+        }
+        fail(s, "jwplayer", null, err);
+      };
+      player.on("setupError", onError);
+      player.on("error", onError);
+    }
+
+    function fail(s, where, xhr, err) {
+      XTV.log.error("player-" + where, xhr, {
+        movieId: s.item.movieId,
+        mediaId: s.item.mediaId,
+        error: err ? { code: err.code, message: err.message } : null
+      });
+      stop(false);
+      XTV.message.show("No pudimos reproducir esta película. Probá de nuevo en unos minutos.");
+    }
+
+    // Sale del player. Si saveFirst, guarda la posición actual.
+    function stop(saveFirst) {
+      var s = session;
+      session = null;
+      gen++;
+      XTV.api.abort("player");
+      XTV.loader.hide("player");
+      if (s && s.player) {
+        if (saveFirst !== false && !s.done && s.tracking) {
+          var pos = 0;
+          try {
+            pos = s.player.getPosition();
+          } catch (e) {}
+          var dur = durationOf(s);
+          if (dur > 0 && pos > dur * C.PROGRESS_DONE_RATIO) {
+            markDone(s);
+          } else if (Math.abs(pos - s.lastSaved) >= 2) {
+            saveProgress(s, pos);
+          }
+        }
+        try {
+          s.player.remove();
+        } catch (e) {}
+      }
+      $("#" + CONTAINER_ID).removeClass("jw-flag-fullscreen");
+      if (s && XTV.state.layer === "video") {
+        XTV.setLayer(s.returnLayer || "grid");
+        XTV.refocus();
       }
     }
-  };
 
-  this.destroy = function () {
-    if (that.debug) {
-      m = "destroy ";
-      _doDebugOutput(m);
-      _doDebugOutput("==============================");
-      _doDebugOutput("");
+    function seekBy(seconds) {
+      var s = session;
+      if (!s || !s.player || s.loading) {
+        return;
+      }
+      try {
+        var pos = s.player.getPosition() || 0;
+        var dur = durationOf(s);
+        var target = Math.max(0, pos + seconds);
+        if (dur > 0) {
+          target = Math.min(target, dur - 1);
+        }
+        s.player.seek(target);
+      } catch (e) {}
     }
-    if (_player) {
-      _player.remove();
-    }
-  };
-}
 
-function getCORS(url, success) {
-  var xhr = new XMLHttpRequest();
-  if (!("withCredentials" in xhr)) xhr = new XDomainRequest(); // fix IE8/9
-  xhr.open("GET", url);
-  xhr.onload = success;
-  xhr.send();
-  return xhr;
+    function togglePlay(force) {
+      var s = session;
+      if (!s || !s.player || s.loading) {
+        return;
+      }
+      try {
+        var state = s.player.getState();
+        if (force === "play" || (force !== "pause" && state !== "playing" && state !== "buffering")) {
+          s.player.play();
+        } else {
+          s.player.pause();
+        }
+      } catch (e) {}
+    }
+
+    function nextCaptions() {
+      var s = session;
+      if (!s || !s.player || s.loading) {
+        return;
+      }
+      try {
+        var list = s.player.getCaptionsList() || [];
+        if (!list.length) {
+          return;
+        }
+        var next = s.player.getCurrentCaptions() + 1;
+        if (next >= list.length) {
+          next = 0;
+        }
+        s.player.setCurrentCaptions(next);
+      } catch (e) {}
+    }
+
+    function handleKey(action) {
+      switch (action) {
+        case "BACK":
+        case "STOP":
+          stop(true);
+          return true;
+        case "OK":
+        case "SPACE":
+        case "PLAYPAUSE":
+          togglePlay();
+          return true;
+        case "PLAY":
+          togglePlay("play");
+          return true;
+        case "PAUSE":
+          togglePlay("pause");
+          return true;
+        case "LEFT":
+          seekBy(-C.SEEK_SHORT_SECONDS);
+          return true;
+        case "RIGHT":
+          seekBy(C.SEEK_SHORT_SECONDS);
+          return true;
+        case "RW":
+          seekBy(-C.SEEK_LONG_SECONDS);
+          return true;
+        case "FF":
+          seekBy(C.SEEK_LONG_SECONDS);
+          return true;
+        case "BLUE":
+          nextCaptions();
+          return true;
+        case "UP":
+        case "DOWN":
+          return true;
+      }
+      return false;
+    }
+
+    XTV.player = {
+      preload: loadLibrary,
+      play: play,
+      stop: stop,
+      handleKey: handleKey,
+      isActive: function () {
+        return !!session;
+      }
+    };
+  })(window.jQuery, window.XTV);
 }

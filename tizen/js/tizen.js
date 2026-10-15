@@ -1,86 +1,85 @@
-window.onload = function() {
-    // add eventListener for tizenhwkey
-	
-    document.addEventListener('tizenhwkey', function(e) {
-        if (e.keyName == "back")
-            try {
-                tizen.application.getCurrentApplication().exit();
-            } catch (ignore) {}
-    });
-    var textbox = document.querySelector('.contents');
-    textbox.addEventListener("click", function() {
-        box = document.querySelector('#textbox');
-        box.innerHTML = box.innerHTML == "Basic" ? "Sample" : "Basic";
-    });
+/*
+ * Xiclos TV v2 - plataforma Samsung (Tizen)
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * ES5 puro.
+ */
+/*
+ * Xiclos TV v2 - plataforma Samsung (Tizen)
+ * ES5 puro.
+ */
+(function (XTV) {
+  "use strict";
 
-};
+  var KEYS = [
+    "MediaPlay",
+    "MediaPause",
+    "MediaPlayPause",
+    "MediaStop",
+    "MediaRewind",
+    "MediaFastForward",
+    "MediaTrackPrevious",
+    "MediaTrackNext",
+    "Exit",
+    "Info",
+    "ColorF3Blue",
+    "ColorF2Yellow",
+    "Caption",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+  ];
 
-function getTVInfo(callback){
-    var tvInfo = {deviceId: "Unknown",platform: "TIZEN" }
-    try{
-        // console.log("TIZEN", tizen)
-        // console.log("CAPABILITIES", tizen.systeminfo.getCapabilities())
-        const info = tizen.systeminfo.getCapabilities()
-        tvInfo = {
-            deviceId:info.duid,
-            platform: info.platformName
-        }   
-    }catch(e){
-        console.log("GET TV INFO TIZEN ERROR", e)
-    } 
-    callback(tvInfo)
-}
+  XTV.platform = {
+    name: "tizen",
 
-function setTV() {
-    /* Set a user agent string */
-    console.log("setTV function")
-    console.log(tizen)
-    var userAgent = "Mozilla/5.0 (Linux; Tizen 2.3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36";
-    //var userAgent = "SARASA";
-    tizen.websetting.setUserAgentString(userAgent);
-    tizen.tvinputdevice.registerKey("MediaPlay");
-    tizen.tvinputdevice.registerKey("MediaPause");
-    tizen.tvinputdevice.registerKey("MediaStop");
-    tizen.tvinputdevice.registerKey("MediaRewind");
-    tizen.tvinputdevice.registerKey("MediaFastForward");
-    tizen.tvinputdevice.registerKey("MediaTrackPrevious");
-    tizen.tvinputdevice.registerKey("MediaTrackNext");
-    tizen.tvinputdevice.registerKey("Exit");
-    tizen.tvinputdevice.registerKey("ColorF3Blue");
-    tizen.tvinputdevice.registerKey("ColorF2Yellow");
-    tizen.tvinputdevice.registerKey("0");
-    tizen.tvinputdevice.registerKey("1");
-    tizen.tvinputdevice.registerKey("2");
-    tizen.tvinputdevice.registerKey("3");
-    tizen.tvinputdevice.registerKey("4");
-    tizen.tvinputdevice.registerKey("5");
-    tizen.tvinputdevice.registerKey("6");
-    tizen.tvinputdevice.registerKey("7");
-    tizen.tvinputdevice.registerKey("8");
-    tizen.tvinputdevice.registerKey("9");
-    tizen.tvinputdevice.registerKey("Caption");
-    pdebugSetting = localStorage.getItem("debug_mode");
-    console.log("pdebugMode2 es " + pdebugSetting);
-    if (pdebugSetting == "on") {
-        $("body").append("<div id='debugMode'>TESTER MODE</div>");
-    } else {
-        $("#debugMode").remove();
+    init: function () {
+      if (!window.tizen || !window.tizen.tvinputdevice) {
+        return;
+      }
+      for (var i = 0; i < KEYS.length; i++) {
+        try {
+          window.tizen.tvinputdevice.registerKey(KEYS[i]);
+        } catch (e) {
+          // Algunas teclas no existen en todos los modelos
+        }
+      }
+    },
+
+    afterLogin: function () {
+      // Igual que la versión anterior: el reproductor se comporta mejor
+      // con este user agent en los modelos más viejos.
+      try {
+        window.tizen.websetting.setUserAgentString(
+          "Mozilla/5.0 (Linux; Tizen 2.3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+        );
+      } catch (e) {}
+    },
+
+    getTVInfo: function (callback) {
+      var info = { deviceId: "Unknown", platform: "TIZEN" };
+      try {
+        if (window.webapis && window.webapis.productinfo && window.webapis.productinfo.getDuid) {
+          info.deviceId = window.webapis.productinfo.getDuid();
+        } else {
+          var caps = window.tizen.systeminfo.getCapabilities();
+          info.deviceId = caps.duid;
+          info.platform = caps.platformName || info.platform;
+        }
+      } catch (e) {}
+      callback(info);
+    },
+
+    // "Salir": deja la app en segundo plano, como antes
+    exit: function () {
+      try {
+        window.tizen.application.getCurrentApplication().hide();
+      } catch (e) {
+        try {
+          window.tizen.application.getCurrentApplication().exit();
+        } catch (e2) {}
+      }
+    },
+
+    hide: function () {
+      this.exit();
     }
-}
-
-function hideApp() {
-//    tizen.application.getCurrentApplication().exit();
-    $("#modalConfirm").remove();
-    if ($("#modalPin").length == 0){
-        setFocusOn();
-    }
-    else{
-        curLevel = level.BODY;
-    }
-    tizen.application.getCurrentApplication().hide();
-}
-
-function setPremiere(){
-    console.log("setPremiere = true")
-    return true;
-}
+  };
+})(window.XTV);

@@ -1,49 +1,47 @@
-function setTV(){
-	pdebugSetting = localStorage.getItem("debug_mode");
-	console.log("pdebugMode2 es "+pdebugSetting);
-	if (pdebugSetting == "on"){
-		$("body").append("<div id='debugMode'>TESTER MODE</div>");
-	}
-	else{
-		$("#debugMode").remove();
-	}
+/*
+ * Xiclos TV v2 - plataforma LG (webOS)
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * ES5 puro.
+ */
+/*
+ * Xiclos TV v2 - plataforma LG (webOS)
+ * ES5 puro.
+ */
+(function (XTV) {
+  "use strict";
 
-}
+  XTV.platform = {
+    name: "webos",
 
-function getTVInfo(callback){
-	var tvInfo = {deviceId: "Unknown", platform: "WebOS" }
-	try {
-		console.log("LG", webOS)
-		webOS.deviceInfo(function (info){
-			console.log("DEVICE INFO", info)
-			callback(
-				{
-					deviceId:info.modelName,
-					platform: "WebOS"
-				}    
-			)
-		})
-	} catch (error) {
-		console.log("GET TV INFO WEBOS", error)		
-		callback(tvInfo)
-	}
-}
+    init: function () {},
 
-function setPremiere(){
-	console.log("setPremiere = false")
-	return false;
-}
+    afterLogin: function () {},
 
-function hideApp(){
-	console.log("Enter HideApp Function");
-    $("#modalConfirm").remove();
-        if ($("#modalPin").length == 0){
-            setFocusOn();
+    getTVInfo: function (callback) {
+      var fallback = { deviceId: "Unknown", platform: "WebOS" };
+      try {
+        if (window.webOS && window.webOS.deviceInfo) {
+          window.webOS.deviceInfo(function (info) {
+            callback({ deviceId: (info && info.modelName) || "Unknown", platform: "WebOS" });
+          });
+          return;
         }
-        else{
-            curLevel = level.BODY
-        }
-	// webOS.platformBack();
-	window.close();
-}
+      } catch (e) {}
+      callback(fallback);
+    },
 
+    exit: function () {
+      try {
+        if (window.webOS && window.webOS.platformBack) {
+          window.webOS.platformBack();
+          return;
+        }
+      } catch (e) {}
+      window.close();
+    },
+
+    hide: function () {
+      this.exit();
+    }
+  };
+})(window.XTV);

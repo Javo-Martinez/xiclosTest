@@ -1,575 +1,395 @@
-var timer;
-var jcp = null;
-var isWebOS4 = false;
-
-function findSubstring(mainString, subString) {
-  var mainLength = mainString.length;
-  var subLength = subString.length;
-
-  for (var i = 0; i <= mainLength - subLength; i++) {
-    var j;
-    for (j = 0; j < subLength; j++) {
-      if (mainString[i + j] != subString[j]) {
-        break;
-      }
-    }
-    if (j == subLength) {
-      return true; // Substring found
-    }
-  }
-  return false; // Substring not found
-}
-
-function setOnOff(msg) {
-  if (msg == "online") {
-    $("#modalOnOff").remove();
-  } else {
-    //Cuando se pierde la conexión
-    $("body").append("<div id='modalOnOff'  class='modal'>");
-    $("#modalOnOff").append("<div id='resultsModal'>");
-    $("#resultsModal").append(
-      "<p class='offlineWarning'>Su conexión de red se ha perdido.</p>"
-    );
-  }
-}
-
-function setFocus() {
-  curLevel = level.NONE;    
-  var myID = $(".onFocus").attr("id");
-  var currentID = $(".onFocus").attr("prodid");
-
-  $(".onFocus").removeClass("onFocus");
-  $(".activeContent").addClass("onFocus");
-
-
-
+/*
+ * Xiclos TV v2 - modales y menú lateral
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * En Amazon (mientras siga con la versión anterior) carga la copia de common/legacy/js/utils.js.
+ * ES5 puro.
+ */
+if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
+  window.XTV_BOOT.load("utils.js");
+} else {
   /*
-  $(".content:first").find(".box:eq( 0 )").addClass("onFocus");
-  $(".content:first").find(".box:eq( 0 )").addClass("activeContent");
-  */
+   * Xiclos TV v2 - modales
+   * Un solo modal abierto a la vez. Al cerrarse devuelve las teclas a la
+   * capa que estaba activa antes de abrirlo.
+   * Mantiene el markup y las clases del CSS existente (#confirm,
+   * .confirmField, .onFocus, etc.).
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
 
-  showProdDetails();
+    var current = null;
 
-  if (!$("#" + myID).hasClass('icon')) {
-    $("#" + myID).attr("onclick", "setPlayFocus()");
-  }
-
-  curLevel = level.BODY;
-}
-
-
-function setFocusFirstElement(){
-
-  $(".content:first").find(".box:eq( 0 )").addClass("onFocus");
-  $(".content:first").find(".box:eq( 0 )").addClass("activeContent");
-  showProdDetails();
-  curLevel = level.BODY;
-}
-
-function setMenuFocus() {
-
-  curLevel = level.MENU;
-
-  //Obtengo el ID del proDetails de la película que está visible para seguir mostrando los detalles
-  var visibleDiv = $(".prodDetails").filter(function() {
-    return $(this).css("display") === "block";
-  });
-  let prodDetailID = visibleDiv.attr("id");
-  $("#" + prodDetailID).css("display", "block");
-
-  //Asigno clase para expandir el menú
-  $("#newMenu").addClass("newMenuActive");
-
-
-  //FOCO en el primer elemento del menú
-  $(".onFocus").removeClass("onFocus");
-  $("#div_vimeo_player").css("display", "block");
-  $("#newMenu .icon:first-of-type").addClass("onFocus");
-  $(".menuTitle").css("display", "block");
-}
-
-function setMenuFocusOff() {
-
-  //Remuevo clase para expandir el menú
-  $("#newMenu").removeClass("newMenuActive");
-  $(".menuTitle").css("display", "none");
-  curLevel = level.BODY;
-  setFocus();
-}
-
-function setFocusOn() {
-
-  var $checkFirstStrip = $(".gridContent:first");
-
-  if ($checkFirstStrip.hasClass("menuStrip")) {
-    setMenuFocus();
-  } else {
-    setFocus();
-  }
-}
-
-function setPlayFocus() {
-  curLevel = level.NONE;
-  /*
-  phasChapters = $(".onFocus").attr("prodType");
-  if (phasChapters == "") {
-    phasChapters = $(".activeContent").attr("prodType");
-  }
-  */
-  psid = $(".onFocus").attr("prodid");
-  //console.log("phasChapters: " + phasChapters);
-  localStorage.setItem("detailedproduction", JSON.stringify(psid));
-
-  $(".onFocus").removeClass("onFocus");
-  $("#buttonContainer").show();
-  $("#grid").hide();
-  $(".navButton:first").addClass("onFocus");
-}
-
-function showConfirm(pAlertMsg, pLevel) {
-  console.log("showConfirm");
-  curLevel = level.CONFIRM;
-  $(".onFocus").removeClass("onFocus");
-  $("body").append("<div id='modalConfirm' class='modal'>");
-  $("#modalConfirm").append('<div class="trapezium2 modalTrapezium2"></div>');
-  $("#modalConfirm").append('<div class="trapezium modalTrapezium"></div>');
-  $("#modalConfirm").append('<div class="triangle"></div>');
-  $("#modalConfirm").append("<p id='confirm'>");
-  $("#confirm").append("<p>" + pAlertMsg);
-  $("#confirm").fadeIn("slow");
-  $("#confirm").append(
-    "<button id='confirmAction' class='confirmField' onmouseenter='confirmFocus()' onclick='hideApp()';>SI"
-  );
-  $("#confirm").append(
-    "<button id='cancelAction' class='confirmField onFocus' onmouseenter='confirmFocus()' onclick='closeConfirm()';>NO"
-  );
-}
-
-function showLogoutConfirm(pAlertMsg, pLevel) {
-  console.log("showConfirm");
-  curLevel = level.CONFIRM;
-  $(".onFocus").removeClass("onFocus");
-  $("body").append("<div id='modalConfirm' class='modal'>");
-  $("#modalConfirm").append('<div class="trapezium2 modalTrapezium2"></div>');
-  $("#modalConfirm").append('<div class="trapezium modalTrapezium"></div>');
-  $("#modalConfirm").append('<div class="triangle"></div>');
-  $("#modalConfirm").append("<p id='confirm'>");
-  $("#confirm").append("<p>" + pAlertMsg);
-  $("#confirm").fadeIn("slow");
-  $("#confirm").append(
-    "<button id='confirmAction' class='confirmField' onmouseenter='confirmFocus()' onclick='logout(true)';>SI"
-  );
-  $("#confirm").append(
-    "<button id='cancelAction' class='confirmField onFocus' onmouseenter='confirmFocus()' onclick='closeConfirm()';>NO"
-  );
-}
-
-function hideAppConfirm() {
-  showConfirm("¿Realmente querés cerrar Xiclos?", "BODY");
-}
-
-function logoutConfirm() {
-  showLogoutConfirm("¿Realmente querés cerrar tu sesión en Xiclos? Si cerrás tu sesión deberás volver a sincronizar tu dispositivo para disfrutar Xiclos nuevamente.", "BODY");
-}
-
-function closeConfirm() {
-  if ($("#modalPin").length == 0) {
-    setFocusOn();
-  } else {
-    curLevel = level.BODY;
-  }
-  $("#modalConfirm").remove();
-}
-
-function setAction(pvideoId, pprodid, rowid) {
-  setLoader();
-  curLevel = level.CONFIRM;
-  const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-  const urlCheckBookmark = getPathCheckBookmark();
-  $.ajax({
-    url: urlCheckBookmark + "?movieid=" + pprodid,
-    headers: {
-      Authorization: "TV",
-      U: JSON.stringify(userSync.User)
-    },
-    dataType: "json",
-    type: "GET",
-    cache: false,
-    success: function(resultData) {
-      const result = resultData.data;
-      $(".onFocus").addClass("activeContent");
-      $(".onFocus").removeClass("onFocus");
-      var mycheck = result[0].bookmark;
-      if (mycheck == 1) {
-        var ptitle = "QUITAR DE MI LISTA";
-        var bookmarked = "bookmarked";
-      } else {
-        var ptitle = "AGREGAR A MI LISTA";
-        var bookmarked = "";
+    function focusItem(el) {
+      if (!current || !el) {
+        return;
       }
-
-      var imgID = rowid.replace("box", "img");
-      var pmoviename = $("#" + rowid)
-        .children(".posterTitle")
-        .text();
-      var pimage = $("#" + imgID).attr("src");
-      var pimage = pimage.replace("-205x347", "");
-
-      $("body").append("<div id='modalConfirmAction' class='modal'>");
-      $("#modalConfirmAction").append("<p id='confirm' class='bookmarkModal'>");
-      $("#confirm").append('<img src="' + pimage + '"/>');
-      $("#confirm").append('<p class= "moviename">' + pmoviename);
-      $("#confirm").append(
-        "<button id='playMovie' class='confirmField bookmarkButton onFocus' onmouseenter='confirmFocus()' onclick='createPlayer(\"" +
-        pvideoId +
-        '",' +
-        pprodid +
-        ")';>VER AHORA "
-      );
-      $("#confirm").append(
-        "<button id='manageBookmark' class='confirmField bookmarkButton " +
-        bookmarked +
-        "' onmouseenter='confirmFocus()' onclick='manageBookmark(" +
-        pprodid +
-        ',"' +
-        rowid +
-        "\")';>" +
-        ptitle +
-        ""
-      );
-      setTimeout(function() {
-
-          unsetLoader();
-            }, 3000);
-    },
-    error: function(response) {
-      console.log("ERROR setAction", response);
-      unsetLoader();
+      current.$el.find(".onFocus").removeClass("onFocus");
+      $(el).addClass("onFocus");
+      current.focused = el;
+      if (current.def.onFocus) {
+        current.def.onFocus(el);
+      }
     }
-  });
-}
 
-function getGenreList() {
-  setLoader();
+    function items() {
+      return current ? current.$el.find(current.def.items) : $();
+    }
 
-  curLevel = level.CONFIRM;
-
-  var url = getPathGenreList();
-  const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-  $.ajax({
-    url: url + "?type=Género",
-    headers: {
-      Authorization: "TV",
-      U: JSON.stringify(userSync.User)
-    },
-    dataType: "json",
-    type: "GET",
-    cache: false,
-    success: function(resultData) {
-      const result = resultData.data;
-      var resultLength = result.length;
-      console.log("getGenreList result", result);
-      if ($("#modalGenreList").length <= 0) {
-        $("body").append("<div id='modalGenreList' class='modal'>");
-      }
-
-      $("#modalGenreList").append(
-        '<div class="trapezium2 modalTrapezium2"></div>'
-      );
-      $("#modalGenreList").append(
-        '<div class="trapezium modalTrapezium"></div>'
-      );
-      $("#modalGenreList").append('<div class="triangle"></div>');
-      $("#modalGenreList").append('<p class= "moviename">EXPLORAR POR GÉNERO');
-
-      $("#modalGenreList").append("<p id='confirm' class='bookmarkGenreList'>");
-      $(".onFocus").removeClass("onFocus");
-
-      for (i = 0; i < resultLength; i++) {
-        if (i == 0) {
-          classOnFocus = "onFocus";
-        } else {
-          classOnFocus = "";
+    var modal = (XTV.modal = {
+      /*
+       * def = {
+       *   $el: elemento jQuery ya armado,
+       *   items: selector de los elementos navegables,
+       *   focus: elemento o selector con foco inicial,
+       *   onActivate: function(el) al apretar OK o hacer click,
+       *   onBack: function() (si no está, Volver cierra el modal),
+       *   onKey: function(action, event) -> true si la manejó,
+       *   onClose: function() al cerrarse
+       * }
+       */
+      open: function (def) {
+        modal.close(true);
+        var prevLayer = XTV.state.layer;
+        if (prevLayer === "modal") {
+          prevLayer = "grid";
         }
-        myGenre = result[i].genre;
+        current = { def: def, $el: def.$el, prevLayer: prevLayer, focused: null };
+        $("body").append(def.$el);
+        XTV.setLayer("modal");
 
-        $("#confirm").append(
-          "<button id='playMovie' class='confirmField " +
-          classOnFocus +
-          " genreList' onmouseenter='confirmFocus()' onclick=performSearch(" +
-          result[i].genreId +
-          ",'genre','" +
-          encodeURI(myGenre) +
-          "');>" +
-          result[i].genre.toUpperCase() +
-          ""
+        // Puntero (Magic Remote / mouse)
+        def.$el.on("mousemove", def.items, function () {
+          if (XTV.pointer.isActive() && current && current.focused !== this) {
+            focusItem(this);
+          }
+        });
+        def.$el.on("click", def.items, function (e) {
+          e.preventDefault();
+          focusItem(this);
+          modal.activate();
+        });
+
+        var initial = def.focus
+          ? typeof def.focus === "string"
+            ? def.$el.find(def.focus).get(0)
+            : def.focus
+          : items().get(0);
+        focusItem(initial);
+      },
+
+      close: function (silent) {
+        if (!current) {
+          return;
+        }
+        var closing = current;
+        current = null;
+        closing.$el.remove();
+        if (XTV.state.layer === "modal") {
+          XTV.setLayer(closing.prevLayer);
+        }
+        if (!silent && closing.def.onClose) {
+          closing.def.onClose();
+        }
+      },
+
+      isOpen: function () {
+        return !!current;
+      },
+
+      focused: function () {
+        return current ? current.focused : null;
+      },
+
+      focus: focusItem,
+
+      activate: function () {
+        if (current && current.focused && current.def.onActivate) {
+          current.def.onActivate(current.focused);
+        }
+      },
+
+      handleKey: function (action, event) {
+        if (!current) {
+          return false;
+        }
+        if (current.def.onKey) {
+          var handled = current.def.onKey(action, event);
+          if (handled === true) {
+            return true;
+          }
+          if (handled === "native") {
+            // La tecla la procesa el navegador (por ejemplo, mover el cursor del texto)
+            return false;
+          }
+        }
+        if (XTV.keys.isNav(action)) {
+          var next = XTV.nav.pick(items(), current.focused, action);
+          if (next) {
+            focusItem(next);
+          }
+          return true;
+        }
+        if (action === "OK") {
+          modal.activate();
+          return true;
+        }
+        if (action === "BACK") {
+          if (current.def.onBack) {
+            current.def.onBack();
+          } else {
+            modal.close();
+          }
+          return true;
+        }
+        return false;
+      },
+
+      /* --------------------------------------------------------------
+       * Plantillas
+       * ------------------------------------------------------------ */
+
+      // Fondo con trapecios (igual que los modales anteriores)
+      decorate: function ($el) {
+        $el.append('<div class="trapezium2 modalTrapezium2"></div>');
+        $el.append('<div class="trapezium modalTrapezium"></div>');
+        $el.append('<div class="triangle"></div>');
+        return $el;
+      },
+
+      /*
+       * Confirmación SI / NO.
+       * opts = { message, yes, no, onYes, onNo, focusYes }
+       */
+      confirm: function (opts) {
+        var $el = $('<div id="modalConfirm" class="modal"></div>');
+        modal.decorate($el);
+        var $confirm = $('<p id="confirm"></p>');
+        $confirm.append($("<p></p>").text(opts.message));
+        var $yes = $('<button id="confirmAction" class="confirmField"></button>').text(
+          opts.yes || "SI"
         );
+        var $no = $('<button id="cancelAction" class="confirmField"></button>').text(
+          opts.no || "NO"
+        );
+        $confirm.append($yes).append($no);
+        $el.append($confirm);
+
+        modal.open({
+          $el: $el,
+          items: ".confirmField",
+          focus: opts.focusYes ? $yes.get(0) : $no.get(0),
+          onActivate: function (el) {
+            modal.close(true);
+            if (el === $yes.get(0)) {
+              if (opts.onYes) {
+                opts.onYes();
+              }
+            } else if (opts.onNo) {
+              opts.onNo();
+            }
+          },
+          onBack: function () {
+            modal.close(true);
+            if (opts.onNo) {
+              opts.onNo();
+            }
+          }
+        });
+      },
+
+      /*
+       * Aviso con un solo botón OK.
+       * opts = { message, onClose }
+       */
+      alert: function (opts) {
+        var $el = $('<div id="alertSearch" class="modal"></div>');
+        modal.decorate($el);
+        var $confirm = $('<p id="confirm"></p>');
+        $confirm.append($("<p></p>").text(opts.message));
+        var $ok = $('<button id="confirmAction" class="confirmField"></button>').text("OK");
+        $confirm.append($ok);
+        $el.append($confirm);
+        modal.open({
+          $el: $el,
+          items: ".confirmField",
+          onActivate: function () {
+            modal.close(true);
+            if (opts.onClose) {
+              opts.onClose();
+            }
+          },
+          onBack: function () {
+            modal.close(true);
+            if (opts.onClose) {
+              opts.onClose();
+            }
+          }
+        });
       }
-    },
-    error: function(response) {
-      console.log("ERROR getGenreList:", response);
-    }
-  });
-
-  setTimeout(function() {
-    unsetLoader();
-  }, 3000);
-}
-
-function closeConfirmAction() {
-  $("#modalConfirm").remove();
-  $("#grid").remove();
-  initMainScreen();
-}
-
-function confirmFocus() {
-  $(".onFocus").removeClass("onFocus");
-  $(".confirmField:hover").addClass("onFocus");
-}
-
-function showConfirmBody(pAlertMsg, pLevel) {
-  curLevel = level.CONFIRM;
-  localStorage.setItem("current_context", "body");
-  $(".onFocus").removeClass("onFocus");
-  $("body").append("<div id='modalConfirm' class='modal'>");
-  $("#modalConfirm").append("<p id='confirm'>");
-  $("#confirm").append("<p>" + pAlertMsg);
-  $("#confirm").fadeIn("slow");
-  $("#confirm").append(
-    "<button id='confirmAction' class='confirmField' onmouseenter='confirmFocus()' onclick=hideApp();>SI"
-  );
-  $("#confirm").append(
-    "<button id='cancelAction' class='confirmField onFocus' onmouseenter='confirmFocus()' onclick=closeBodyConfirm();>NO"
-  );
-}
-
-function closeBodyConfirm() {
-  $("#gridContentMenu").remove();
-  $("#modalConfirm").remove();
-
-  if (!$(".box").hasClass("activeContent")) {
-    $("#grid").remove();
-    initMainScreen();
-  } else {
-    curLevel = level.BODY;
-    $(".activeContent").addClass("onFocus");
-    $(".activeContent").removeClass("activeContent");
-  }
-  $("#gridContentMenu").remove();
-  $("#modalConfirm").remove();
-}
-
-function showConfirmSearch(pAlertMsg, pLevel) {
-  curLevel = level.CONFIRM;
-  localStorage.setItem("current_context", "serch");
-  $(".onFocus").removeClass("onFocus");
-  $("body").append("<div id='modalConfirm' class='modal'>");
-  $("#modalConfirm").append("<p id='confirm'>");
-  $("#confirm").append("<p>" + pAlertMsg);
-  $("#confirm").fadeIn("slow");
-  $("#confirm").append(
-    "<button id='confirmAction' class='confirmField' onmouseenter='confirmFocus()' onclick=hideApp();>SI"
-  );
-  $("#confirm").append(
-    "<button id='cancelAction' class='confirmField onFocus' onmouseenter='confirmFocus()' onclick=closeSearchConfirm();>NO"
-  );
-}
-
-function customMessage(pmessage) {
-  curLevel = level.NONE;
-  $("body").append(
-    "<div id='modalMessage' class='simpleModal'> <p class='customMessage'>" +
-    pmessage +
-    " </p>"
-  );
-  $("#modalMessage").fadeOut(5000);
-  setTimeout(setLevel, 5000);
-}
-
-function closeModalConfirm() {
-  $("#modalConfirm").remove();
-}
-
-function setLevel() {
-  curLevel = level.BODY;
-  $("#modalMessage").remove();
-}
-
-function closeModal() {
-  console.log("closeModal");
-  $("#modal").remove();
-}
-
-function closeModalDelay() {
-  setTimeout(function() {
-    closeModal();
-  }, 3000);
-}
-
-function setLoader() {
-  if ($("#modal").length <= 0) {
-    $("body").append("<div id='modal' class='modal modalAnimation'>");
-    $("#modal").append(
-      "<div class='loading'><img src='" +
-      getPathDomain() +
-      "/tv/common/img/logo.png'></div>"
-    );
-  }
-}
-
-function unsetLoader() {
-  if ($("#modal").get().length) {
-    $("#modal").fadeOut(1000, function() {
-      $("#modal").remove();
     });
-  }
-}
+  })(window.jQuery, window.XTV);
 
-//BOOKMARKS
-function manageBookmark(pprodid, pboxid, pmoviename, pimage) {
-  console.log("manageBookmark", pprodid);
-  //PARAMS
-  setLoader();
-  const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-  const operation = $("#manageBookmark").hasClass("bookmarked") ?
-    "DELETE" :
-    "PUT";
-  const url = getPathSetBookmark();
-  $.ajax({
-    url: url + "?movieId=" + pprodid,
-    headers: {
-      Authorization: "TV",
-      U: JSON.stringify(userSync.User)
-    },
-    dataType: "json",
-    type: operation,
-    cache: false,
-    complete: function() {
-      if ($("#manageBookmark").hasClass("bookmarked")) {
-        $("#manageBookmark").removeClass("bookmarked");
-        $("#manageBookmark").html("AGREGAR A MI LISTA");
-      } else {
-        $("#manageBookmark").addClass("bookmarked");
-        $("#manageBookmark").html("QUITAR DE MI LISTA");
+  /*
+   * Xiclos TV v2 - menú lateral
+   * Mismo markup y clases que la versión anterior (#newMenu, .icon,
+   * .menuTitle, .newMenuActive).
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
+
+    var util = XTV.util;
+    var C = XTV.config;
+
+    var $menu = null;
+    var index = 0;
+
+    function entries() {
+      var list = [
+        { id: "buscar", img: "buscar.png", text: "Buscar", run: function () { XTV.search.open(); } },
+        { id: "home", img: "home.png", text: "Inicio", run: function () { XTV.grid.goHome(true); } },
+        { id: "cineclub", img: "cineclub.png", text: "Cineclub", run: function () { XTV.grid.showCineclub(); } },
+        { id: "explorar", img: "explorar.png", text: "Explorar", run: function () { XTV.actions.genres(); } }
+      ];
+      if (XTV.session.isStudent()) {
+        list.push({
+          id: "alumnos",
+          img: "exclusivo.png",
+          text: "Exclusivos",
+          run: function () { XTV.grid.showList({ type: "students" }); }
+        });
       }
-      unsetLoader();
-    },
-    error: function(response) {
-      console.log("ERROR manageBookmark", response);
-      unsetLoader();
+      list.push({ id: "salir", img: "salir.png", text: "Salir", run: function () { XTV.actions.confirmExit(); } });
+      list.push({
+        id: "cerrar_sesion",
+        img: "cerrar_sesion.png",
+        text: "Cerrar sesión",
+        run: function () { XTV.actions.confirmLogout(); }
+      });
+      return list;
     }
-  });
-}
 
-//USER HISTORY
+    var list = [];
 
-function setUserHistory(pMovieId, pprodid, playerType) {
-  var pResumePoint = 0;
+    function icons() {
+      return $menu ? $menu.find(".icon") : $();
+    }
 
-  //BUSCO DATOS
-  var detailsID = $(".activeContent")
-    .attr("id")
-    .replace("box", "detailsContainer");
-  var duration = $("#" + detailsID)
-    .children(".prodDuration")
-    .text();
-
-  //PASO A SEGUNDOS
-  duration = parseFloat(duration) * 60;
-
-  //PARAMS
-  var _resumePoint = 0;
-  if (playerType == "vimeo") {
-    // TODO: Forzar fullscreen vimeo player
-  } else {
-    $("#div_vimeo_player").addClass("jw-flag-fullscreen"); // Fuerzo el inicio en fullscreen (LG no lo hace solito)
-  }
-  const url = getPathSetHistory();
-  const userSync = JSON.parse(localStorage.getItem("xiclos_sync"));
-  $.ajax({
-    url: url + "?movieId=" + pprodid + "&resumePoint=" + pResumePoint,
-    headers: {
-      Authorization: "TV",
-      U: JSON.stringify(userSync.User)
-    },
-    dataType: "json",
-    type: "GET",
-    cache: false,
-    success: function(resultData) {
-      console.log("setUserHistory: ", resultData);
-      var result = resultData.data;
-      console.log("resumePoint: ", result);
-      _resumePoint = result.resumePoint;
-      if (playerType == "vimeo") {
-        console.log("CREATED VIMEO PLAYER");
-        jcp = new JCPlayer();
-        jcp.create(
-          "div_vimeo_player",
-          pMovieId,
-          _resumePoint,
-          duration,
-          result.progressId,
-          pprodid,
-          "vimeo"
-        );
-      } else {
-        console.log("CREATED JWPLAYER");
-        jcp = new JCPlayer();
-        jcp.create(
-          "div_vimeo_player",
-          pMovieId,
-          _resumePoint,
-          duration,
-          result.progressId,
-          pprodid,
-          "jwplayer"
-        );
+    function paint() {
+      if (!$menu) {
+        return;
       }
-    },
-    complete: function(result) {
-      setCurLevelVideo();
-    },
-    error: function(response) {
-      console.log("ERROR setUserHistory", response);
+      var active = XTV.state.layer === "menu";
+      $menu.toggleClass("newMenuActive", active);
+      $menu.find(".menuTitle").css("display", active ? "block" : "none");
+      icons().removeClass("onFocus");
+      if (active) {
+        icons().eq(index).addClass("onFocus");
+      }
     }
-  });
-}
 
-//Timer
-var tid = "";
+    var menu = (XTV.menu = {
+      build: function () {
+        $("#newMenu").remove();
+        list = entries();
+        var html = "";
+        for (var i = 0; i < list.length; i++) {
+          html +=
+            '<img src="' +
+            util.esc(C.IMG + list[i].img) +
+            '" class="icon" id="' +
+            list[i].id +
+            '" data-index="' +
+            i +
+            '" style="cursor:pointer">' +
+            '<p class="menuTitle" data-index="' +
+            i +
+            '">' +
+            util.esc(list[i].text) +
+            "</p>";
+        }
+        $menu = $('<div id="newMenu">' + html + "</div>");
+        if ($("#result").length) {
+          $("#result").after($menu);
+        } else {
+          $("body").append($menu);
+        }
 
-function createTimer(pFunction) {
-  tid = setInterval(pFunction, 60000);
-}
+        // Puntero: pasar por un ícono lo enfoca; salir del menú no lo cierra
+        // (así un movimiento involuntario del control no cambia el foco).
+        $menu.on("mousemove", ".icon, .menuTitle", function () {
+          if (!XTV.pointer.isActive()) {
+            return;
+          }
+          var i = parseInt($(this).attr("data-index"), 10);
+          if ((XTV.state.layer === "grid" || XTV.state.layer === "menu") && !(XTV.state.layer === "menu" && i === index)) {
+            menu.open(i);
+          }
+        });
+        $menu.on("click", ".icon, .menuTitle", function () {
+          var i = parseInt($(this).attr("data-index"), 10);
+          if (XTV.state.layer === "grid" || XTV.state.layer === "menu") {
+            index = i;
+            menu.run();
+          }
+        });
+        paint();
+      },
 
-function abortTimer() {
-  // to be called when you want to stop the timer
-  if (tid != "") {
-    clearInterval(tid);
-  }
-}
+      open: function (focusIndex) {
+        if (!$menu) {
+          return;
+        }
+        if (typeof focusIndex === "number") {
+          index = focusIndex;
+        }
+        XTV.setLayer("menu");
+        paint();
+      },
 
-//Llamado al player desde el botón Ver Ahora
-function createPlayer(pvideoId, pprodid) {
-  setLoader();
-  curLevel = level.NONE;
-  $(".onFocus").removeClass("onFocus");
-  //TO DO: Setea el zindex en 10 para cuando este el curlevel en VIDEO o cuando creas el player
-  if (!isNaN(Number(pvideoId)) && typeof Number(pvideoId) == "number") {
-    setUserHistory(pvideoId, pprodid, "vimeo");
-  } else {
-    setUserHistory(pvideoId, pprodid, "jwplayer");
-  }
+      close: function () {
+        if (XTV.state.layer === "menu") {
+          XTV.setLayer("grid");
+        }
+        paint();
+      },
 
-  setTimeout(function() {
-  $("#modalConfirmAction").remove();
-  }, 500);
-}
+      run: function () {
+        var entry = list[index];
+        menu.close();
+        if (entry) {
+          entry.run();
+        }
+      },
 
-function Destroy() {
-  curLevel = level.BODY;
-  if (jcp) {
-    jcp.destroy();
-    jcp = null;
-  }
+      paint: paint,
+
+      handleKey: function (action) {
+        var n = list.length;
+        if (action === "UP") {
+          index = (index - 1 + n) % n;
+          paint();
+          return true;
+        }
+        if (action === "DOWN") {
+          index = (index + 1) % n;
+          paint();
+          return true;
+        }
+        if (action === "RIGHT" || action === "BACK") {
+          menu.close();
+          return true;
+        }
+        if (action === "OK") {
+          menu.run();
+          return true;
+        }
+        if (action === "LEFT") {
+          return true;
+        }
+        return false;
+      }
+    });
+  })(window.jQuery, window.XTV);
 }

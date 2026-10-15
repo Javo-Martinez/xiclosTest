@@ -1,309 +1,777 @@
-function checkLogin() {
-  console.log("CHECK LOGIN MOCK");
-}
-/* ============== COMMON ==================== */
-var URL_API_VERSION = "v1";
-
-/* ============== AMBIENTE DE DESARROLLO ====================================== */
-
-var URL_DOMAIN = "https://xiclos.com"; //Web local con carpeta api
-var URL_PLAYER = "https://cdn.jwplayer.com/v2/media/";
-var URL_DOMAIN_XICLOS = "https://xiclos.com"; //Web original
-var URL_DOMAIN_BE = "https://us-central1-xiclos-prod.cloudfunctions.net/api/tv"; // "http://192.168.0.47:3001/tv" // Backend
-
-// Importaciones:
-var MOVIES_PAGE_SIZE = 9;
-var SLIDERS_PAGE_SIZE = 8;
-
-pdebugmode = localStorage.getItem("debug_mode");
-
-// var USER_AGENT_EXAMPLES = [
-//   "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36 WebAppManager",
-//   "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36",
-//   "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.34 Safari/537.36 WebAppManager",
-//   "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.34 Safari/537.36 WebAppManager",
-//   "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) 76.0.3809.146/6.0 TV Safari/537.36",
-//   "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36 WebAppManager",
-//   "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MTC20F; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.124 Mobile Safari/537.36 cordova-amazon-fireos/3.4.0 AmazonWebAppPlatform/3.4.0;2.0",
-//   "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MTC20F; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.124 Mobile Safari/537.36 cordova-amazon-fireos/3.4.0 AmazonWebAppPlatform/3.4.0;2.0",
-//   "Mozilla/5.0 (SMART-TV; Linux; Tizen) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36 Tizen",
-//   "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.34 Safari/537.36 WebAppManager",
-//   "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36",
-//   "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36",
-//   "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36",
-//   "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.34 Safari/537.36 WebAppManager",
-//   "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Version/5.0 TV Safari/537.36"
-// ];
-
-//Deprecado
-function getPathDomain() {
-  return URL_DOMAIN;
-}
-
-function getPathHome() {
-  return URL_DOMAIN_BE + "/home";
-}
-
-function getPathMoreMovies() {
-  return URL_DOMAIN_BE + "/moreMovies";
-}
-
-function getPathCineclub() {
-  return URL_DOMAIN_BE + "/home";
-}
-
-function getPathNewPin() {
-  return URL_DOMAIN_BE + "/newPin";
-}
-
-function getPathCheckPin() {
-  return URL_DOMAIN_BE + "/checkPin";
-}
-
-function getPathCheckBookmark() {
-  return URL_DOMAIN_BE + "/checkBookmark";
-}
-
-function getPathPlayer() {
-  return URL_PLAYER;
-}
-
-function getPathGenres() {
-  return URL_DOMAIN_BE + "/genres";
-}
-
-function getPathStudentsOnly() {
-  return URL_DOMAIN_BE + "/studentsOnly";
-}
-
-function getPathSearch() {
-  return URL_DOMAIN_BE + "/genericSearch";
-}
-
-function getPathRestrictedSearch() {
-  return URL_DOMAIN_BE + "/genericRestrictedSearch";
-}
-
-function getPathUserHistory() {
-  return URL_DOMAIN_BE + "/userHistory";
-}
-
-function getPathUserBookmark() {
-  return URL_DOMAIN_BE + "/userBookmark";
-}
-
-function getPathGenreList() {
-  return URL_DOMAIN_BE + "/genreslist";
-}
-
-//Datos del usuario
-function getPathGetUserData() {
-  return URL_DOMAIN_BE + "/userData";
-}
-
-//Agrega o elimina favoritos
-function getPathSetBookmark() {
-  return URL_DOMAIN_BE + "/setBookmark";
-}
-
-function getPathUptHistory() {
-  return URL_DOMAIN_BE + "/updHistory";
-}
-
-function getPathDeleteHistory() {
-  return URL_DOMAIN_BE + "/deletedHistory";
-}
-
-function getPathSetHistory() {
-  return URL_DOMAIN_BE + "/setHistory";
-}
-
-function getPathGetResumePoint() {
-  return URL_DOMAIN_BE + "/getResumePoint";
-}
-
-function getPathUnsync() {
-  return URL_DOMAIN_BE + "/unsync";
-}
-
-function getPathLog() {
-  return URL_DOMAIN_BE + "/log";
-}
-
-function getPathLogErrorNotification() {
-  return URL_DOMAIN_BE + "/log-notification";
-}
-
-function isES6Supported(userAgent) {
-  if (!userAgent || typeof userAgent !== "string") {
-    return false;
-  }
-
-  var ua = userAgent.toLowerCase();
-
-  if (ua.indexOf("tizen") !== -1) {
-    var tizenMatch = ua.match(/tizen\s+(\d+\.\d+)/);
-    if (tizenMatch) {
-      var tizenVersion = parseFloat(tizenMatch[1]);
-      // Tizen 5.0+ soporta ES6
-      return tizenVersion >= 5.0;
-    }
-  }
-
-  var chromeMatch = ua.match(/chrome\/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
-  if (chromeMatch) {
-    // LG webOS 5.0 con Chromium 68+ soporta ES6
-    return parseInt(chromeMatch[1], 10) >= 68;
-  }
-
-  return false;
-}
-
-function loadScriptsSequentially(scriptsToLoad, index, callback) {
-  // Si ya cargamos todos los scripts, llamar al callback
-  if (index >= scriptsToLoad.length) {
-    if (callback) callback();
-    return;
-  }
-
-  var scriptSrc = scriptsToLoad[index];
-  var script = document.createElement("script");
-  script.src = scriptSrc;
-  script.type = "text/javascript";
-
-  script.onload = function () {
-    if (typeof console !== "undefined" && console.log) {
-      console.log("Script " + scriptSrc + " cargado correctamente");
-    }
-    // Cargar el siguiente script
-    loadScriptsSequentially(scriptsToLoad, index + 1, callback);
-  };
-
-  script.onerror = function () {
-    if (typeof console !== "undefined" && console.error) {
-      console.error("Error cargando script: " + scriptSrc);
-    }
-    // Continuar con el siguiente script aunque este falle
-    loadScriptsSequentially(scriptsToLoad, index + 1, callback);
-  };
-
-  document.head.appendChild(script);
-}
-
-function allScriptsLoaded() {
-  console.log("Todos los scripts cargados correctamente");
-  initXiclosTV();
-}
-
-function configureWebOSViewport() {
-  var existingViewport = document.querySelector('meta[name="viewport"]');
-  if (existingViewport) {
-    existingViewport.remove();
-  }
-
-  console.log("configureWebOSViewport");
-
-  var viewportMeta = document.createElement("meta");
-  viewportMeta.name = "viewport";
-  viewportMeta.content =
-    "width=device-width, height=device-height, initial-scale=1.0, user-scalable=no";
-
-  document.head.insertBefore(viewportMeta, document.head.firstChild);
-}
-
-// Configuración de tipo de TV
-(function () {
-  configureWebOSViewport();
-  window.addEventListener("DOMContentLoaded", function () {
-    var userAgent = navigator.userAgent;
-    console.log("User Agent:", userAgent);
-
-    console.log("is ES6 supported: ", isES6Supported(userAgent));
-    // Lista de scripts a cargar
-    var scriptsToLoad = [];
-    var cssToLoad = [];
-
-    var webKitAndChromium = isES6Supported(userAgent);
-    var isFireStickDevice = false;
-
-    if (typeof getTVInfo == "function") {
-      getTVInfo(function (tvInfo) {
-        if (tvInfo.platform.toLowerCase().indexOf("amazon") !== -1) {
-          isFireStickDevice = true;
-        }
-      });
-    }
-
-    console.log("isFireStickDevice: ", isFireStickDevice);
-
-    if (webKitAndChromium && !isFireStickDevice) {
-      scriptsToLoad = [
-        getPathDomain() + "/tv/common/v1/js/login.js",
-        getPathDomain() + "/tv/common/v1/js/JCPlayer.js",
-        getPathDomain() + "/tv/common/v1/js/spatial.js",
-        getPathDomain() + "/tv/common/v1/js/utils.js",
-        getPathDomain() + "/tv/common/v1/js/search.js",
-        getPathDomain() + "/tv/common/v1/js/xiclos.js",
-        getPathDomain() + "/tv/common/v1/js/arrows.js"
-      ];
-      cssToLoad = [
-        getPathDomain() + "/tv/common/v1/css/arrows.css",
-        getPathDomain() + "/tv/common/v1/css/custom.css",
-        getPathDomain() + "/tv/common/v1/css/site.css",
-        getPathDomain() + "/tv/common/v1/css/slider.css",
-        getPathDomain() + "/tv/common/v1/css/style.css"
-      ];
-    } else {
-      if (isFireStickDevice) {
-        scriptsToLoad = [
-          getPathDomain() + "/tv/common/legacy/js/login.js",
-          getPathDomain() + "/tv/common/legacy/js/JCPlayer.js",
-          getPathDomain() + "/tv/common/legacy/js/utils.js",
-          getPathDomain() + "/tv/common/legacy/js/search.js",
-          getPathDomain() + "/tv/common/legacy/js/xiclos.js",
-          getPathDomain() + "/tv/common/legacy/js/arrows.js"
-        ];
-        cssToLoad = [
-          getPathDomain() + "/tv/common/legacy/css/arrows.css",
-          getPathDomain() + "/tv/common/legacy/css/site.css",
-          getPathDomain() + "/tv/common/legacy/css/slider.css",
-          getPathDomain() + "/tv/common/legacy/css/style.css"
-        ];
-      } else {
-        scriptsToLoad = [
-          getPathDomain() + "/tv/common/legacy/js/login.js",
-          getPathDomain() + "/tv/common/legacy/js/JCPlayer.js",
-          getPathDomain() + "/tv/common/legacy/js/spatial.js",
-          getPathDomain() + "/tv/common/legacy/js/utils.js",
-          getPathDomain() + "/tv/common/legacy/js/search.js",
-          getPathDomain() + "/tv/common/legacy/js/xiclos.js",
-          getPathDomain() + "/tv/common/legacy/js/arrows.js"
-        ];
-        cssToLoad = [
-          getPathDomain() + "/tv/common/legacy/css/arrows.css",
-          getPathDomain() + "/tv/common/legacy/css/custom.css",
-          getPathDomain() + "/tv/common/legacy/css/site.css",
-          getPathDomain() + "/tv/common/legacy/css/slider.css",
-          getPathDomain() + "/tv/common/legacy/css/style.css"
-        ];
-      }
-    }
 /*
-    // Carga de CSS
-    for (var i = 0; i < cssToLoad.length; i++) {
-      var link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = cssToLoad[i];
-      document.head.appendChild(link);
-    }
+ * Xiclos TV v2 - configuración y núcleo (estado, teclas, API, loader)
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * En Amazon (mientras siga con la versión anterior) carga la copia de common/legacy/js/config.js.
+ * ES5 puro.
+ */
+if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
+  window.XTV_BOOT.load("config.js");
+} else {
+  /*
+   * Xiclos TV v2 - configuración
+   * ES5 puro: este archivo tiene que poder cargarse en TVs desde 2017
+   * (webOS 3.5 / Chromium 38, Tizen 3 / Chromium 47).
+   */
+  var XTV = window.XTV || {};
+  window.XTV = XTV;
 
-    // Carga de JS
-    loadScriptsSequentially(scriptsToLoad, 0, function () {
-      allScriptsLoaded();
+  XTV.config = {
+    VERSION: "2.0.0",
+
+    DOMAIN: "https://xiclos.com",
+    API: "https://us-central1-xiclos-prod.cloudfunctions.net/api/tv",
+    VIMEO_API: "https://us-central1-xiclos-prod.cloudfunctions.net/api/api/v2/vimeo/",
+    JW_MEDIA_API: "https://cdn.jwplayer.com/v2/media/",
+    JW_LIBRARY: "https://cdn.jwplayer.com/libraries/uAC0h9eo.js",
+
+    // Imágenes que hoy se sirven desde xiclos.com (íconos del menú, logo, etc.)
+    IMG: "https://xiclos.com/tv/common/img/",
+
+    // Carga progresiva de la home
+    HOME_FIRST_PAGE: 4, // primer pedido (incluye las listas del usuario)
+    HOME_PAGE: 6, // tiras por cada pedido siguiente
+    HOME_PREFETCH_ROWS: 3, // cuántas tiras antes del final se pide la siguiente página
+
+    // Tiras largas: pósters que se crean de entrada y margen por delante del foco
+    ROW_CHUNK: 24,
+    ROW_CHUNK_AHEAD: 12,
+
+    // Búsqueda
+    SEARCH_MIN_CHARS: 2,
+    SEARCH_DELAY_MS: 350,
+    SEARCH_MAX_RESULTS: 30,
+    SEARCH_MAX_PEOPLE: 8,
+    SEARCH_RECENT_MAX: 8,
+
+    // Pósters: cuántos se cargan por delante y por detrás de lo visible
+    POSTERS_AHEAD: 4,
+    POSTERS_BEHIND: 2,
+
+    // Retraso para cambiar el fondo desenfocado (evita recalcularlo con cada tecla)
+    BACKGROUND_DELAY_MS: 250,
+
+    // PIN de sincronización
+    PIN_RENEW_SECONDS: 60,
+    PIN_POLL_SECONDS: 10,
+
+    // Player
+    PROGRESS_SAVE_SECONDS: 15,
+    PROGRESS_DONE_RATIO: 0.95,
+    SEEK_SHORT_SECONDS: 10,
+    SEEK_LONG_SECONDS: 30,
+
+    // Peticiones
+    REQUEST_TIMEOUT_MS: 20000,
+    LOADER_MAX_MS: 30000,
+
+    // Cuentas de prueba (para habilitar la v2 de forma gradual)
+    TESTER_ACCOUNTS: ["mrtnz.jvr@gmail.com", "javomartinez@hotmail.com"]
+  };
+
+  XTV.paths = (function (api) {
+    return {
+      home: api + "/home",
+      newPin: api + "/newPin",
+      checkPin: api + "/checkPin",
+      checkBookmark: api + "/checkBookmark",
+      setBookmark: api + "/setBookmark",
+      genres: api + "/genres",
+      genresList: api + "/genreslist",
+      studentsOnly: api + "/studentsOnly",
+      search: api + "/genericSearch",
+      userHistory: api + "/userHistory",
+      userBookmark: api + "/userBookmark",
+      setHistory: api + "/setHistory",
+      updateHistory: api + "/updHistory",
+      deleteHistory: api + "/deletedHistory",
+      unsync: api + "/unsync",
+      logNotification: api + "/log-notification"
+    };
+  })(XTV.config.API);
+
+  /*
+   * Xiclos TV v2 - núcleo
+   * Utilidades, sesión, teclas, API, log, loader y estado global.
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
+
+    var C = XTV.config;
+
+    /* ======================================================================
+     * Utilidades
+     * ==================================================================== */
+    var util = (XTV.util = {});
+
+    util.esc = function (value) {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    };
+
+    // Convierte HTML/entidades que vienen del backend (WordPress) a texto
+    // plano, sin ejecutar nada: se parsea en un documento inerte.
+    var inertDoc = null;
+    util.plain = function (value) {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      var s = String(value);
+      if (s.indexOf("<") === -1 && s.indexOf("&") === -1) {
+        return s;
+      }
+      try {
+        if (!inertDoc) {
+          inertDoc = document.implementation.createHTMLDocument("");
+        }
+        var div = inertDoc.createElement("div");
+        div.innerHTML = s;
+        return div.textContent || "";
+      } catch (e) {
+        return s.replace(/<[^>]*>/g, "");
+      }
+    };
+
+    // Texto del backend listo para insertar en HTML
+    util.text = function (value) {
+      return util.esc(util.plain(value));
+    };
+
+    // "a,b" o ["a","b"] -> "a, b"
+    util.joinList = function (value) {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      if ($.isArray(value)) {
+        return value.join(", ");
+      }
+      return String(value).replace(/\s*,\s*/g, ", ");
+    };
+
+    util.isEmpty = function (value) {
+      if (value === null || value === undefined) {
+        return true;
+      }
+      if ($.isArray(value)) {
+        return value.length === 0;
+      }
+      return String(value).replace(/\s+/g, "") === "";
+    };
+
+    util.debounce = function (fn, ms) {
+      var timer = null;
+      var debounced = function () {
+        var args = arguments;
+        var self = this;
+        if (timer) {
+          clearTimeout(timer);
+        }
+        timer = setTimeout(function () {
+          timer = null;
+          fn.apply(self, args);
+        }, ms);
+      };
+      debounced.cancel = function () {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      };
+      return debounced;
+    };
+
+    util.now = function () {
+      return new Date().getTime();
+    };
+
+    util.cssUrl = function (url) {
+      return 'url("' + String(url || "").replace(/["\\\n\r]/g, "") + '")';
+    };
+
+    util.setTranslateX = function (el, px) {
+      var value = "translateX(" + Math.round(-px) + "px)";
+      el.style.webkitTransform = value;
+      el.style.transform = value;
+    };
+
+    /* ======================================================================
+     * Almacenamiento y sesión
+     * ==================================================================== */
+    var storage = (XTV.storage = {
+      get: function (key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          return null;
+        }
+      },
+      set: function (key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch (e) {}
+      },
+      remove: function (key) {
+        try {
+          window.localStorage.removeItem(key);
+        } catch (e) {}
+      },
+      clear: function () {
+        try {
+          window.localStorage.clear();
+        } catch (e) {}
+      }
     });
 
-*/    
+    var SYNC_KEY = "xiclos_sync";
 
-          allScriptsLoaded();
-  });
-})();
+    XTV.session = {
+      get: function () {
+        var raw = storage.get(SYNC_KEY);
+        if (!raw) {
+          return null;
+        }
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          return null;
+        }
+      },
+      set: function (syncUserDevice) {
+        storage.set(SYNC_KEY, JSON.stringify(syncUserDevice));
+      },
+      // Deja solo la sincronización (mismo comportamiento que la versión anterior)
+      keepOnlySync: function () {
+        var keep = [SYNC_KEY, "debug_mode", "xtv_recent_searches"];
+        var saved = {};
+        for (var i = 0; i < keep.length; i++) {
+          saved[keep[i]] = storage.get(keep[i]);
+        }
+        storage.clear();
+        for (var k in saved) {
+          if (saved.hasOwnProperty(k) && saved[k] !== null) {
+            storage.set(k, saved[k]);
+          }
+        }
+      },
+      // Cierra la sesión pero conserva las búsquedas recientes del dispositivo
+      clearKeepingDevice: function () {
+        var recent = storage.get("xtv_recent_searches");
+        storage.clear();
+        if (recent) {
+          storage.set("xtv_recent_searches", recent);
+        }
+      },
+      clear: function () {
+        storage.clear();
+      },
+      user: function () {
+        var s = this.get();
+        return s && s.User ? s.User : null;
+      },
+      isStudent: function () {
+        var user = this.user();
+        var subs = (user && user.subscriptions) || [];
+        for (var i = 0; i < subs.length; i++) {
+          if (
+            subs[i] &&
+            (subs[i].su_name === "EXCLUSIVOALUMNOS01" ||
+              subs[i].su_name === "EXCLUSIVOALUMNOS01ANTIGUO")
+          ) {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+
+    /* ======================================================================
+     * Teclas
+     * Un solo mapa para Tizen, webOS y teclado de PC.
+     * ==================================================================== */
+    var KEYMAP = {
+      13: "OK",
+      37: "LEFT",
+      38: "UP",
+      39: "RIGHT",
+      40: "DOWN",
+      27: "BACK", // Escape (PC)
+      461: "BACK", // webOS
+      10009: "BACK", // Tizen
+      10182: "EXIT", // Tizen
+      415: "PLAY",
+      19: "PAUSE",
+      10252: "PLAYPAUSE", // Tizen
+      413: "STOP",
+      417: "FF",
+      412: "RW",
+      406: "BLUE",
+      457: "INFO",
+      65376: "DONE", // Tizen IME: "Listo"
+      65385: "CANCEL", // Tizen IME: "Cancelar"
+      32: "SPACE",
+      // Teclas numéricas del control (en la búsqueda escriben números)
+      48: "D0", 49: "D1", 50: "D2", 51: "D3", 52: "D4",
+      53: "D5", 54: "D6", 55: "D7", 56: "D8", 57: "D9"
+    };
+
+    XTV.keys = {
+      action: function (event) {
+        var code = event.keyCode;
+        var extra = XTV.platform && XTV.platform.keys;
+        var action = (extra && extra[code]) || KEYMAP[code] || null;
+        // Backspace en un campo de texto borra, no es "Volver"
+        if (action === "BACK" && code === 8) {
+          var el = document.activeElement;
+          if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA") && !el.readOnly) {
+            return null;
+          }
+        }
+        return action;
+      },
+      isNav: function (action) {
+        return (
+          action === "LEFT" ||
+          action === "RIGHT" ||
+          action === "UP" ||
+          action === "DOWN"
+        );
+      }
+    };
+
+    /* ======================================================================
+     * Log de errores
+     * Reemplaza a logAction(), que no existía en la versión anterior.
+     * ==================================================================== */
+    var logCount = 0;
+    XTV.log = {
+      info: function () {
+        if (window.console && console.log) {
+          console.log.apply(console, arguments);
+        }
+      },
+      error: function (action, xhr, extra) {
+        var detail = {
+          action: action,
+          status: xhr ? xhr.status : null,
+          statusText: xhr ? xhr.statusText : null,
+          extra: extra || null,
+          version: C.VERSION,
+          platform: XTV.platform ? XTV.platform.name : "unknown",
+          ua: navigator.userAgent
+        };
+        if (window.console && console.error) {
+          console.error("[XTV]", action, detail);
+        }
+        // Límite para no inundar el backend si algo falla en loop
+        if (logCount >= 20) {
+          return;
+        }
+        logCount++;
+        try {
+          $.ajax({
+            url: XTV.paths.logNotification,
+            headers: { Authorization: "TV" },
+            dataType: "json",
+            type: "POST",
+            data: {
+              message: "TV v2: " + action,
+              data: JSON.stringify(detail),
+              type: "ERROR"
+            },
+            timeout: 10000
+          });
+        } catch (e) {}
+      }
+    };
+
+    /* ======================================================================
+     * API
+     * Todas las peticiones pasan por acá. Cada una pertenece a un "scope"
+     * (por ejemplo "home", "list", "player") y se pueden cancelar en bloque
+     * cuando el usuario se va de esa pantalla.
+     * ==================================================================== */
+    var scopes = {};
+
+    XTV.api = {
+      request: function (opts) {
+        var headers = { Authorization: "TV" };
+        if (opts.auth !== false) {
+          var user = XTV.session.user();
+          if (user) {
+            headers.U = JSON.stringify(user);
+          }
+        }
+        var url = opts.url;
+        if (opts.query) {
+          url += (url.indexOf("?") === -1 ? "?" : "&") + $.param(opts.query);
+        }
+        var ajaxOpts = {
+          url: url,
+          type: opts.method || "GET",
+          dataType: "json",
+          data: opts.data,
+          cache: opts.cache === undefined ? false : opts.cache,
+          timeout: opts.timeout || C.REQUEST_TIMEOUT_MS
+        };
+        if (opts.headers !== false) {
+          ajaxOpts.headers = headers;
+        }
+        var xhr = $.ajax(ajaxOpts);
+        var scope = opts.scope;
+        if (scope) {
+          if (!scopes[scope]) {
+            scopes[scope] = [];
+          }
+          scopes[scope].push(xhr);
+          xhr.always(function () {
+            var list = scopes[scope] || [];
+            for (var i = list.length - 1; i >= 0; i--) {
+              if (list[i] === xhr) {
+                list.splice(i, 1);
+              }
+            }
+          });
+        }
+        return xhr;
+      },
+
+      get: function (url, query, scope, extra) {
+        var opts = $.extend({ url: url, query: query, scope: scope }, extra || {});
+        return this.request(opts);
+      },
+
+      abort: function (scope) {
+        var list = scopes[scope];
+        if (!list) {
+          return;
+        }
+        scopes[scope] = [];
+        for (var i = 0; i < list.length; i++) {
+          try {
+            list[i].abort();
+          } catch (e) {}
+        }
+      },
+
+      // true si el error es por cancelación propia (no hay que mostrar nada)
+      isAbort: function (xhr, textStatus) {
+        return textStatus === "abort" || (xhr && xhr.statusText === "abort");
+      }
+    };
+
+    /* ======================================================================
+     * Loader
+     * Se muestra mientras haya al menos una operación pendiente. Cada
+     * operación se identifica con una clave, así que cerrar una no cierra
+     * la de otra. Tiene un tope de tiempo para no quedar trabado nunca.
+     * ==================================================================== */
+    var pending = {};
+    var loaderTimer = null;
+
+    function loaderCount() {
+      var n = 0;
+      for (var k in pending) {
+        if (pending.hasOwnProperty(k)) {
+          n++;
+        }
+      }
+      return n;
+    }
+
+    function renderLoader() {
+      var $modal = $("#modal");
+      if (loaderCount() > 0) {
+        if (!$modal.length) {
+          $("body").append(
+            '<div id="modal" class="modal modalAnimation"><div class="loading"><img src="' +
+              util.esc(C.IMG + "logo.png") +
+              '"></div></div>'
+          );
+        }
+        if (!loaderTimer) {
+          loaderTimer = setTimeout(function () {
+            loaderTimer = null;
+            if (loaderCount() > 0) {
+              XTV.log.error("loader-timeout", null, { pending: pending });
+              pending = {};
+              renderLoader();
+            }
+          }, C.LOADER_MAX_MS);
+        }
+      } else {
+        $modal.remove();
+        if (loaderTimer) {
+          clearTimeout(loaderTimer);
+          loaderTimer = null;
+        }
+      }
+    }
+
+    XTV.loader = {
+      show: function (key) {
+        pending[key || "default"] = true;
+        renderLoader();
+      },
+      hide: function (key) {
+        delete pending[key || "default"];
+        renderLoader();
+      },
+      isVisible: function () {
+        return loaderCount() > 0;
+      }
+    };
+
+    /* ======================================================================
+     * Operación en curso ("busy")
+     * Mientras se espera algo que cambia de pantalla (abrir una película,
+     * cargar una lista, iniciar el player) las flechas se ignoran y Volver
+     * cancela la operación. Evita acciones sobre una pantalla que se va.
+     * ==================================================================== */
+    var busy = null;
+
+    XTV.busy = {
+      start: function (key, onCancel) {
+        if (busy && busy.key !== key && busy.onCancel) {
+          // Una operación nueva reemplaza a la anterior
+          var prev = busy;
+          busy = null;
+          prev.onCancel();
+          XTV.loader.hide(prev.key);
+        }
+        busy = { key: key, onCancel: onCancel };
+        XTV.loader.show(key);
+      },
+      end: function (key) {
+        if (busy && busy.key === key) {
+          busy = null;
+        }
+        XTV.loader.hide(key);
+      },
+      cancel: function () {
+        if (!busy) {
+          return false;
+        }
+        var current = busy;
+        busy = null;
+        XTV.loader.hide(current.key);
+        if (current.onCancel) {
+          current.onCancel();
+        }
+        return true;
+      },
+      active: function () {
+        return !!busy;
+      }
+    };
+
+    /* ======================================================================
+     * Mensaje breve a pantalla completa (reemplaza customMessage)
+     * Cualquier tecla lo cierra.
+     * ==================================================================== */
+    var messageTimer = null;
+    var messageOnClose = null;
+
+    XTV.message = {
+      show: function (text, ms, onClose) {
+        this.hide(true);
+        $("body").append(
+          '<div id="modalMessage" class="simpleModal" style="z-index:10008"><p class="customMessage">' +
+            util.esc(text) +
+            "</p></div>"
+        );
+        messageOnClose = onClose || null;
+        messageTimer = setTimeout(function () {
+          XTV.message.hide();
+        }, ms || 3500);
+      },
+      hide: function (silent) {
+        if (messageTimer) {
+          clearTimeout(messageTimer);
+          messageTimer = null;
+        }
+        var wasVisible = $("#modalMessage").length > 0;
+        $("#modalMessage").remove();
+        var cb = messageOnClose;
+        messageOnClose = null;
+        if (wasVisible && !silent && cb) {
+          cb();
+        }
+      },
+      isVisible: function () {
+        return $("#modalMessage").length > 0;
+      }
+    };
+
+    /* ======================================================================
+     * Conexión
+     * El aviso tiene su propio id y nadie más lo borra.
+     * ==================================================================== */
+    XTV.net = {
+      init: function () {
+        window.addEventListener("offline", function () {
+          XTV.net.render(false);
+        });
+        window.addEventListener("online", function () {
+          XTV.net.render(true);
+        });
+      },
+      render: function (online) {
+        $("#modalOnOff").remove();
+        if (!online) {
+          $("body").append(
+            '<div id="modalOnOff" class="modal" style="z-index:10010"><div id="resultsModal"><p class="offlineWarning">Su conexión de red se ha perdido.</p></div></div>'
+          );
+        }
+      },
+      isOffline: function () {
+        return $("#modalOnOff").length > 0;
+      }
+    };
+
+    // Los index.html empaquetados llaman a setOnOff('online' | 'offline')
+    window.setOnOff = function (msg) {
+      XTV.net.render(msg !== "offline");
+    };
+
+    /* ======================================================================
+     * Estado global
+     * layer indica quién recibe las teclas:
+     *   boot, pin, grid, menu, modal, video
+     * ==================================================================== */
+    XTV.state = {
+      layer: "boot"
+    };
+
+    XTV.setLayer = function (layer) {
+      var prev = XTV.state.layer;
+      XTV.state.layer = layer;
+      if (document.body) {
+        $(document.body)
+          .removeClass("xtv-layer-" + prev)
+          .addClass("xtv-layer-" + layer);
+      }
+      if (XTV.grid && XTV.grid.syncFocusClass) {
+        XTV.grid.syncFocusClass();
+      }
+    };
+
+    // Vuelve a pintar el foco de la capa activa (al volver del player)
+    XTV.refocus = function () {
+      if (XTV.state.layer === "search" && XTV.search && XTV.search.refocus) {
+        XTV.search.refocus();
+      } else if (XTV.grid && XTV.grid.refocus) {
+        XTV.grid.refocus();
+      }
+    };
+
+    // Normaliza para comparar: minúsculas y sin tildes (la ñ se conserva)
+    var ACCENTS = { "\u00e1": "a", "\u00e0": "a", "\u00e4": "a", "\u00e2": "a", "\u00e3": "a", "\u00e9": "e", "\u00e8": "e", "\u00eb": "e", "\u00ea": "e",
+      "\u00ed": "i", "\u00ec": "i", "\u00ef": "i", "\u00ee": "i", "\u00f3": "o", "\u00f2": "o", "\u00f6": "o", "\u00f4": "o", "\u00f5": "o",
+      "\u00fa": "u", "\u00f9": "u", "\u00fc": "u", "\u00fb": "u", "\u00e7": "c" };
+    util.norm = function (value) {
+      var s = util.plain(value).toLowerCase();
+      return s.replace(/[\u00e1\u00e0\u00e4\u00e2\u00e3\u00e9\u00e8\u00eb\u00ea\u00ed\u00ec\u00ef\u00ee\u00f3\u00f2\u00f6\u00f4\u00f5\u00fa\u00f9\u00fc\u00fb\u00e7]/g, function (ch) {
+        return ACCENTS[ch] || ch;
+      });
+    };
+
+    /* ======================================================================
+     * Puntero (Magic Remote de LG / mouse)
+     * El hover solo cuenta si el puntero se movió de verdad. Cuando el
+     * contenido se desplaza con las flechas, el navegador dispara eventos de
+     * mouse sobre lo que quedó debajo del cursor; sin este control el foco
+     * saltaría solo.
+     * ==================================================================== */
+    var pointer = { active: false, x: -1, y: -1 };
+    XTV.pointer = {
+      init: function () {
+        document.addEventListener(
+          "mousemove",
+          function (e) {
+            if (e.clientX !== pointer.x || e.clientY !== pointer.y) {
+              pointer.x = e.clientX;
+              pointer.y = e.clientY;
+              pointer.active = true;
+            }
+          },
+          true
+        );
+        // webOS avisa cuando oculta el cursor
+        document.addEventListener("cursorStateChange", function (e) {
+          if (e && e.detail && e.detail.visibility === false) {
+            pointer.active = false;
+          }
+        });
+      },
+      // Se llama con cada tecla del control: el puntero deja de mandar
+      keyPressed: function () {
+        pointer.active = false;
+      },
+      isActive: function () {
+        return pointer.active;
+      }
+    };
+
+    /* ======================================================================
+     * Navegación geométrica entre elementos (modales, menús)
+     * Elige el elemento más cercano en la dirección pedida según su
+     * posición en pantalla, así no depende del orden del DOM.
+     * ==================================================================== */
+    XTV.nav = {
+      pick: function ($items, current, direction) {
+        if (!current) {
+          return $items.get(0) || null;
+        }
+        var cr = current.getBoundingClientRect();
+        var cx = cr.left + cr.width / 2;
+        var cy = cr.top + cr.height / 2;
+        var best = null;
+        var bestScore = Infinity;
+        $items.each(function () {
+          if (this === current) {
+            return;
+          }
+          var r = this.getBoundingClientRect();
+          if (r.width === 0 && r.height === 0) {
+            return;
+          }
+          var x = r.left + r.width / 2;
+          var y = r.top + r.height / 2;
+          var dx = x - cx;
+          var dy = y - cy;
+          var primary;
+          var secondary;
+          if (direction === "RIGHT") {
+            primary = dx;
+            secondary = dy;
+          } else if (direction === "LEFT") {
+            primary = -dx;
+            secondary = dy;
+          } else if (direction === "DOWN") {
+            primary = dy;
+            secondary = dx;
+          } else {
+            primary = -dy;
+            secondary = dx;
+          }
+          if (primary <= 1) {
+            return;
+          }
+          var score = primary + Math.abs(secondary) * 3;
+          if (score < bestScore) {
+            bestScore = score;
+            best = this;
+          }
+        });
+        return best;
+      }
+    };
+  })(window.jQuery, window.XTV);
+}

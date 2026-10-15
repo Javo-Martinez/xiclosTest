@@ -1,264 +1,775 @@
-function search() {
-    console.log("getSearchPage");
-    curLevel = level.SEARCH;
-    $("body").append("<div id='modalSearch' class='modal'>");
-    $(".onFocus").removeClass("onFocus");
+/*
+ * Xiclos TV v2 - búsqueda predictiva con teclado propio
+ * Este archivo mantiene su nombre porque lo carga el index.html empaquetado.
+ * En Amazon (mientras siga con la versión anterior) carga la copia de common/legacy/js/search.js.
+ * ES5 puro.
+ */
+if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
+  window.XTV_BOOT.load("search.js");
+} else {
+  /*
+   * Xiclos TV v2 - búsqueda predictiva con teclado propio
+   *
+   * - Teclado de la app (A-Z, Ñ, 123) a la izquierda; resultados a la derecha
+   *   que se actualizan mientras se escribe.
+   * - Usa genericSearch (coincidencias parciales, sin tildes, en título,
+   *   director y elenco). Al agregar una letra se filtran al instante los
+   *   resultados que ya hay y después se completan con la respuesta.
+   * - Fila "Personas" (directores y elenco) armada a partir de los resultados.
+   * - Búsquedas recientes guardadas en la TV.
+   * - "Teclado TV" abre el teclado del sistema (puntero de LG, teclado USB).
+   *
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
 
+    var C = XTV.config;
+    var P = XTV.paths;
+    var util = XTV.util;
 
-    $("#modalSearch").append('<div class="trapezium2 modalTrapezium2"></div>');
-    $("#modalSearch").append('<div class="trapezium modalTrapezium"></div>');
-    $("#modalSearch").append('<div class="triangle"></div>');
+    var RECENT_KEY = "xtv_recent_searches";
 
-    $("#modalSearch").append("<div id='searchWrapper'>");
-    $("#searchWrapper").append("<div class='tira'><p>BÚSQUEDA DE PRODUCCIONES</p>");
-    $("#searchWrapper").append("<input id='searchTerms' class='searchField searchTextBox onFocus' maxlength='35'>");
-    $("#searchWrapper").append("<div id='searchButton' class= 'searchField searchButton' onclick='performSearch()'>BUSCAR");
-    $("#searchWrapper").append("<div id='cancelButton' class= 'searchField searchButton' onclick='cancelSearch()'>CANCELAR");
-    $("#searchTerms").focus();
+    var LAYOUTS = {
+      alpha: [
+        "A", "B", "C", "D", "E", "F",
+        "G", "H", "I", "J", "K", "L",
+        "M", "N", "Ñ", "O", "P", "Q",
+        "R", "S", "T", "U", "V", "W",
+        "X", "Y", "Z", { a: "mode", label: "123" }, { a: "del", label: "BORRAR", w: 2 },
+        { a: "space", label: "ESPACIO", w: 2 }, { a: "clear", label: "VACIAR", w: 2 }, { a: "ime", label: "TECLADO TV", w: 2 }
+      ],
+      num: [
+        "1", "2", "3", "4", "5", "6",
+        "7", "8", "9", "0", "-", ".",
+        { a: "mode", label: "ABC", w: 2 }, { a: "del", label: "BORRAR", w: 2 }, { a: "clear", label: "VACIAR", w: 2 },
+        { a: "space", label: "ESPACIO", w: 3 }, { a: "ime", label: "TECLADO TV", w: 3 }
+      ]
+    };
 
-            if ($("#newMenu").hasClass("newMenuActive")) {
+    var $root = null;
+    var $input = null;
+    var $keys = null;
+    var $status = null;
+    var $body = null;
 
-                $("#newMenu").removeClass("newMenuActive");
-                $(".menuTitle").css("display", "none");
-            }
-}
+    var state = {
+      open: false,
+      query: "",
+      mode: "alpha",
+      view: "recent", // recent | results | person
+      person: null,
+      items: [], // resultados mostrados
+      focus: null,
+      ime: false,
+      gen: 0,
+      shownFor: null
+    };
 
+    var cache = {}; // consulta normalizada -> resultados del servidor
+    var scheduled = util.debounce(function () {
+      fetchQuery(state.query);
+    }, C.SEARCH_DELAY_MS);
 
-function performSearch(pid, searchType, pgenre) {
-
-
-    if (pgenre === null || pgenre === undefined) {
-        pgenre = '';
+    /* ======================================================================
+     * Búsquedas recientes
+     * ==================================================================== */
+    function recents() {
+      try {
+        var list = JSON.parse(XTV.storage.get(RECENT_KEY) || "[]");
+        return $.isArray(list) ? list : [];
+      } catch (e) {
+        return [];
+      }
     }
-    setLoader();
-    var bookmarked = '';
-    var students = '';
-    var stripTitle = 'SEARCH';
 
-    console.log("performSearch", searchType);
-    if (searchType === "genre") {
-        var url = getPathGenres();
-        url = `${url}?genreId=${pid}`;
-        stripTitle = decodeURI(pgenre);
-        $("#modalGenreList").remove();
-    } else if (searchType === "students") {
-        url = getPathStudentsOnly();
-        stripTitle = 'EXCLUSIVO PARA ALUMNOS';
-        students = 'students';
-    } else if (searchType === "history") {
-        url = getPathUserHistory();
-        stripTitle = 'LO QUE YA VISTE';
-    } else if (searchType === "bookmark") {
-        url = getPathUserBookmark();
-        stripTitle = 'MI SELECCIÓN';
-        bookmarked = 'bookmarked';
-    } else {
-        const terms = $("#searchTerms").val().toUpperCase()
-        myTerms = '<span class="searchTerms">' + terms;
-        url = `${getPathSearch()}?searchTerms=${terms}`
-        stripTitle = 'RESULTADOS PARA ' + myTerms;
-    }
-
-    console.log("performSearch url " + url);
-    const userSync = JSON.parse(localStorage.getItem("xiclos_sync"))
-    console.log("USER", userSync.User)
-
-    $.ajax({
-        url: url,
-        headers: {
-            Authorization: "TV",
-            U: JSON.stringify(userSync.User)
-        },
-        dataType: "json",
-        type: "GET",
-        success: function(resultData) {
-            const result = resultData.data
-            console.log("PERFORM SEARCH SUCCESS", url, resultData);
-
-            $(".searchResult").remove();
-
-            $(".onFocus").removeClass("onFocus");
-
-            if ($("#newMenu").hasClass("newMenuActive")) {
-
-                $("#newMenu").removeClass("newMenuActive");
-                $(".menuTitle").css("display", "none");
-            }
-
-
-            ext = result.length;
-            console.log("EXT", ext)
-            if (ext !== 0) {
-
-                $(".gridContent").css("display", "none");
-                $("#grid").addClass("specialContentSearch");
-                $("#grid").prepend("<div id='gridContent' class='gridContent searchResult " + bookmarked + students +"'>");
-                $("#gridContent").append("<div id='headlineButton' class='verticalRectangle'></div>");
-                $("#gridContent").append("<div id='stripTitle' class='stripTitle'>" + stripTitle);
-
-                $("#gridContent").append("<div id='content' class='content'>");
-                //setArrows();
-
-
-                let firstElement = "";
-                let lastElement = "";
-
-                for (i = 0; i < ext; i++) {
-
-                    if (i == 0) {
-                        firstElement = 'firstElement';
-                    } else if (i == detailLength - 1 && i != 0) {
-                        lastElement = 'lastElement';
-                    } else {
-                        firstElement = '';
-                        lastElement = '';
-                    }
-
-                    //RECORRO DETALLES
-                    var detailLength = result.length;
-
-                    if (i == 0) {
-                        var onFocus = 'onFocus';
-                    } else {
-                        onFocus = '';
-                    }
-
-                    $("#content").append("<div id='box" + i + result[i].movieId + "' class='box " + firstElement + " " + lastElement + " " + onFocus + "' prodId='" + result[i].movieId + "' mediaId='" + result[i].mediaId + "' pindex='" + i + result[i].movieId + "'  onmouseover='focusDelay(\"" + 'box' + i + result[i].movieId + "\")' onmouseout='outOfFocus(\"" + 'box' + i + result[i].movieId + "\")'>");
-                    $("#box" + i + result[i].movieId).append("<img id='img" + i + result[i].movieId + "' class='poster' src='" + result[i].poster + "'>");
-                    $("#box" + i + result[i].movieId).append("<div class='posterTitle'>" + result[i].title + "</div>")
-
-                    $("#header").append("<div id='prodDetails" + i + result[i].movieId + "' class='prodDetails searchResult'>");
-                    $("#prodDetails" + i + result[i].movieId).append("<div id='detailsContainer" + i + result[i].movieId + "' class='detailsContainer searchResult'></div>'");
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodTitle'>" + result[i].title + "</div>")
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodSinopsis'>" + result[i].sinopsis + "</div>")
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodAudience'>" + result[i].audience + "</div>")
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodDuration'>" + result[i].duration + " minutos</div>")
-                    // $("#detailsContainer" + i + result[i].movieId ).append("<div class='prodAudience'>"+result[i].language.replace('"','')+"</div>")
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodYear'>" + result[i].year + "</div>")
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodIMDB highlight'>IMDB: " + result[i].imdb + "</div>")
-                    $("#detailsContainer" + i + result[i].movieId).append("<div style='clear:both'><br />");
-
-                    if (result[i].genres.length !== 0) {
-                        var genres = String(result[i].genres);
-                        genres = genres.replace(/,/g, ", ");
-                        $("#detailsContainer" + i + result[i].movieId).append("<div class='prodGenres'><span class='highlight'>Géneros:</span>  " + genres + "</div>")
-                    }
-
-                    var director = String(result[i].director);
-                    director = director.replace(/,/g, ", ");
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodDirector'><span class='highlight'> Director:</span> " + director + "</div>")
-
-                    var actors = String(result[i].actors);
-                    actors = actors.replace(/,/g, ", ");
-                    $("#detailsContainer" + i + result[i].movieId).append("<div class='prodActors'><span class='highlight'>Elenco:</span>  " + actors + "</div> <br />")
-
-                    if (i == 0) {
-                        showProdDetails();
-
-                    }
-                }
-
-                setTimeout(function() {
-                    curLevel = level.BODY;
-                    unsetLoader();
-
-                $("#modalSearch").remove();
-                $(".modal").remove();
-                }, 3000);
-
-            } else {
-                $(".onFocus").removeClass("onFocus");
-                if (searchType === "history") {
-                    var alertMsg = "Todavía no viste ninguna película en Xiclos. <br />Próximamente encontrarás aquí todas aquellas que hayas visto";
-                    showAlertSearch(alertMsg);
-                } else if (searchType === "bookmark") {
-                    var alertMsg = "Todavía no agregaste ninguna película a tu selección. <br />Cuando las agregues podrás encontrarlas aquí y verlas cuando quieras.";
-                    showAlertSearch(alertMsg);
-                } else {
-                    var alertMsg = "No se encuentra el texto buscado: " + $("#searchTerms").val() + "<br />&iquest;Quieres realizar una nueva b&uacute;squeda?";
-                    showConfirmSearch(alertMsg);
-
-                }
-                /*
-                setTimeout(function() {
-                    unsetLoader();
-                    $("#modalSearch").remove();
-                    curLevel = level.CONFIRM;
-                }, 3000);
-                */
-            }
-        },
-        error: function(response) {
-            logAction("search.performSearch", response, {
-                msg: "Error on GET search.performSearch",
-                url: url
-            }, "error")
-
-            unsetLoader();
+    function saveRecent(text) {
+      text = $.trim(String(text || ""));
+      if (text.length < C.SEARCH_MIN_CHARS) {
+        return;
+      }
+      var key = util.norm(text);
+      var list = recents();
+      var out = [text];
+      for (var i = 0; i < list.length && out.length < C.SEARCH_RECENT_MAX; i++) {
+        if (util.norm(list[i]) !== key) {
+          out.push(list[i]);
         }
-    });
-
-
-}
-
-function studentsOnly() {
-    performSearch('', 'students');
-}
-
-function showConfirmSearch(pAlertMsg) {
-    console.log("showConfirmSearch");
-    curLevel = level.CONFIRM;
-    $("body").append("<div id='modalConfirm' class='modal'>");
-    $("#modalConfirm").append("<p id='confirm'>");
-    $("#confirm").append('<p>' + pAlertMsg);
-    $("#confirm").fadeIn('slow');
-    $("#confirm").append("<button id='confirmAction' class='confirmField onFocus' onclick=reDoSearch();>SÍ");
-    $("#confirm").append("<button id='cancelAction' class='confirmField' onclick=cancelSearch();>NO");
-}
-
-function showAlertSearch(pAlertMsg) {
-    console.log("showAlertSearch");
-    curLevel = level.CONFIRM;
-    $("body").append("<div id='alertSearch' class='modal'>");
-    $("#alertSearch").append('<div class="trapezium2 modalTrapezium2"></div>');
-    $("#alertSearch").append('<div class="trapezium modalTrapezium"></div>');
-    $("#alertSearch").append('<div class="triangle"></div>');
-    $("#alertSearch").append("<p id='confirm'>");
-    $("#confirm").append('<p>' + pAlertMsg);
-    $("#confirm").fadeIn('slow');
-    $("#confirm").append("<button id='confirmAction' class='confirmField onFocus' onclick=closeAlertSearch();>OK");
-}
-
-function closeAlertSearch() {
-    $("#alertSearch").remove();
-    $("#modal").remove();
-    curLevel = level.BODY;
-    setMenuFocus();
-}
-
-function cancelSearch() {
-    $("#modalConfirm").remove();
-    $("#modalSearch").remove();
-    $("#modal").remove();
-
-    if ($("#newMenu").hasClass("newMenuActive")) {
-
-        $("#newMenu").removeClass("newMenuActive");
-        $(".menuTitle").css("display", "none");
+      }
+      XTV.storage.set(RECENT_KEY, JSON.stringify(out));
     }
-    setFocus();
-    curLevel = level.BODY;
-    //setMenuFocus();
 
-}
+    /* ======================================================================
+     * Coincidencias y orden
+     * ==================================================================== */
+    function names(value) {
+      if (!value) {
+        return [];
+      }
+      var list = $.isArray(value) ? value : String(value).split(",");
+      var out = [];
+      for (var i = 0; i < list.length; i++) {
+        var n = $.trim(util.plain(list[i]));
+        if (n) {
+          out.push(n);
+        }
+      }
+      return out;
+    }
 
-function reDoSearch() {
-    $("#modalConfirm").remove();
-    $("#modalSearch").remove();
-    $("#modal").remove();
-    search();
-}
+    function wordStarts(text, q) {
+      var words = text.split(/[\s\-.,:;'"()]+/);
+      for (var i = 0; i < words.length; i++) {
+        if (words[i].indexOf(q) === 0) {
+          return true;
+        }
+      }
+      return false;
+    }
 
-function endSearch() {
-    $('.searchResult').remove();
+    // Puntaje de coincidencia de un texto normalizado (menor = mejor), -1 si no coincide
+    function matchScore(text, q) {
+      if (!text) {
+        return -1;
+      }
+      if (text.indexOf(q) === 0) {
+        return 0;
+      }
+      if (wordStarts(text, q)) {
+        return 1;
+      }
+      if (text.indexOf(q) !== -1) {
+        return 2;
+      }
+      return -1;
+    }
+
+    function itemScore(item, q) {
+      var t = matchScore(util.norm(item.title), q);
+      if (t !== -1) {
+        return t;
+      }
+      if (matchScore(util.norm(names(item.director).join(", ")), q) !== -1) {
+        return 3;
+      }
+      if (matchScore(util.norm(names(item.actors).join(", ")), q) !== -1) {
+        return 4;
+      }
+      return 5; // el backend lo encontró por otro campo
+    }
+
+    function rank(items, q, localOnly) {
+      var scored = [];
+      for (var i = 0; i < items.length; i++) {
+        var sc = itemScore(items[i], q);
+        if (localOnly && sc === 5) {
+          continue; // en el filtrado local solo quedan las coincidencias visibles
+        }
+        scored.push({ item: items[i], score: sc, index: i });
+      }
+      scored.sort(function (a, b) {
+        return a.score - b.score || a.index - b.index;
+      });
+      var out = [];
+      for (var j = 0; j < scored.length && j < C.SEARCH_MAX_RESULTS; j++) {
+        out.push(scored[j].item);
+      }
+      return out;
+    }
+
+    function extractPeople(items, q) {
+      var found = {};
+      var list = [];
+      function add(name, role) {
+        var n = util.norm(name);
+        var sc = matchScore(n, q);
+        // Para personas solo cuentan el comienzo del nombre o de una palabra
+        // ("berg" -> Bergman, pero "be" no trae a "Roberto")
+        if (sc === -1 || sc === 2) {
+          return;
+        }
+        if (found[n]) {
+          if (role === "Director") {
+            found[n].role = "Director";
+          }
+          return;
+        }
+        found[n] = { name: name, norm: n, role: role, score: sc };
+        list.push(found[n]);
+      }
+      for (var i = 0; i < items.length; i++) {
+        var d = names(items[i].director);
+        for (var a = 0; a < d.length; a++) {
+          add(d[a], "Director");
+        }
+        var e = names(items[i].actors);
+        for (var b = 0; b < e.length; b++) {
+          add(e[b], "Elenco");
+        }
+      }
+      list.sort(function (x, y) {
+        return x.score - y.score || (x.name < y.name ? -1 : x.name > y.name ? 1 : 0);
+      });
+      return list.slice(0, C.SEARCH_MAX_PEOPLE);
+    }
+
+    /* ======================================================================
+     * Pedidos
+     * ==================================================================== */
+    function normQuery(text) {
+      return $.trim(util.norm(text)).replace(/\s+/g, " ");
+    }
+
+    function request(text, onDone, onFail) {
+      var key = normQuery(text);
+      if (cache.hasOwnProperty(key)) {
+        onDone(cache[key]);
+        return;
+      }
+      var gen = ++state.gen;
+      XTV.api.abort("suggest");
+      setStatus("Buscando…");
+      XTV.api
+        .get(P.search, { searchTerms: $.trim(text).toUpperCase() }, "suggest")
+        .done(function (res) {
+          var data = (res && res.data) || [];
+          cache[key] = data;
+          if (gen === state.gen) {
+            setStatus("");
+            onDone(data);
+          }
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== state.gen) {
+            return;
+          }
+          XTV.log.error("search", xhr, { terms: text });
+          setStatus("No pudimos buscar. Probá de nuevo en unos segundos.");
+          if (onFail) {
+            onFail();
+          }
+        });
+    }
+
+    function fetchQuery(text) {
+      if (!state.open || state.view === "person") {
+        return;
+      }
+      var q = normQuery(text);
+      if (q.length < C.SEARCH_MIN_CHARS) {
+        return;
+      }
+      request(text, function (data) {
+        if (normQuery(state.query) === q && state.view !== "person") {
+          showResults(data, q, false);
+        }
+      });
+    }
+
+    // Filtrado inmediato con lo que ya se tiene (la consulta más larga que
+    // sea prefijo de la actual)
+    function localRefine(q) {
+      var best = null;
+      for (var key in cache) {
+        if (cache.hasOwnProperty(key) && q.indexOf(key) === 0 && (!best || key.length > best.length)) {
+          best = key;
+        }
+      }
+      if (best !== null) {
+        showResults(cache[best], q, best !== q);
+        return best === q;
+      }
+      return false;
+    }
+
+    function queryChanged() {
+      var q = normQuery(state.query);
+      state.view = "results";
+      state.person = null;
+      if (!q) {
+        scheduled.cancel();
+        XTV.api.abort("suggest");
+        state.gen++;
+        setStatus("");
+        showRecent();
+        return;
+      }
+      if (q.length < C.SEARCH_MIN_CHARS) {
+        scheduled.cancel();
+        XTV.api.abort("suggest");
+        state.gen++;
+        setStatus("");
+        showHint("Escribí al menos " + C.SEARCH_MIN_CHARS + " letras.");
+        return;
+      }
+      var complete = localRefine(q);
+      if (complete) {
+        scheduled.cancel();
+        setStatus("");
+      } else {
+        scheduled();
+      }
+    }
+
+    /* ======================================================================
+     * Render
+     * ==================================================================== */
+    function setStatus(text) {
+      if ($status) {
+        $status.text(text || "");
+      }
+    }
+
+    function keyHtml(k) {
+      if (typeof k === "string") {
+        return '<div class="xs-key xs-f" data-k="' + util.esc(k) + '">' + util.esc(k) + "</div>";
+      }
+      var cls = "xs-key xs-f" + (k.w ? " w" + k.w : "") + (k.label.length > 3 ? " small" : "");
+      return '<div class="' + cls + '" data-a="' + k.a + '">' + util.esc(k.label) + "</div>";
+    }
+
+    function renderKeys() {
+      var layout = LAYOUTS[state.mode];
+      var html = "";
+      for (var i = 0; i < layout.length; i++) {
+        html += keyHtml(layout[i]);
+      }
+      $keys.html(html);
+    }
+
+    function setBody(html) {
+      $body.html(html);
+      setShift(0);
+      ensureFocusExists();
+    }
+
+    function showHint(text) {
+      state.items = [];
+      setBody('<p class="xs-hint">' + util.esc(text) + "</p>");
+    }
+
+    function showRecent() {
+      state.view = "recent";
+      state.items = [];
+      var list = recents();
+      if (!list.length) {
+        setBody(
+          '<p class="xs-hint">Escribí con el teclado para buscar películas, directores o actores.</p>'
+        );
+        return;
+      }
+      var html = '<p class="xs-label">Búsquedas recientes</p>';
+      for (var i = 0; i < list.length; i++) {
+        html += '<div class="xs-recent xs-f" data-recent="' + i + '">' + util.esc(list[i]) + "</div>";
+      }
+      html += '<div class="xs-recent clear xs-f" data-clear="1">Borrar búsquedas recientes</div>';
+      setBody(html);
+    }
+
+    function moviesHtml(items) {
+      var html = '<div class="xs-movies">';
+      for (var i = 0; i < items.length; i++) {
+        html +=
+          '<div class="xs-movie xs-f" data-movie="' +
+          i +
+          '"><div class="ph"><img alt=""></div><div class="t">' +
+          util.text(items[i].title) +
+          "</div></div>";
+      }
+      return html + "</div>";
+    }
+
+    function showResults(data, q, preliminary) {
+      var items = rank(data, q, preliminary);
+      var people = extractPeople(data, q);
+      state.items = items;
+      state.people = people;
+      state.shownFor = q;
+      if (!items.length && !people.length) {
+        if (preliminary) {
+          return; // se espera la respuesta del servidor
+        }
+        showHint("No encontramos resultados para “" + $.trim(state.query) + "”.");
+        return;
+      }
+      var html = "";
+      if (people.length) {
+        html += '<p class="xs-label">Personas</p><div class="xs-people">';
+        for (var i = 0; i < people.length; i++) {
+          html +=
+            '<div class="xs-person xs-f" data-person="' +
+            i +
+            '">' +
+            util.esc(people[i].name) +
+            '<span class="role">' +
+            (people[i].role === "Director" ? "Director" : "Elenco") +
+            "</span></div>";
+        }
+        html += "</div>";
+      }
+      if (items.length) {
+        html += '<p class="xs-label">Películas</p>' + moviesHtml(items);
+      }
+      setBody(html);
+      loadPosters(0);
+    }
+
+    function showPerson(person) {
+      state.view = "person";
+      state.person = person;
+      state.items = [];
+      var title = (person.role === "Director" ? "Películas de " : "Películas con ") + person.name;
+      setBody('<p class="xs-label">' + util.esc(title) + "</p>");
+      saveRecent(person.name);
+      request(person.name, function (data) {
+        if (state.view !== "person" || state.person !== person) {
+          return;
+        }
+        var mine = [];
+        for (var i = 0; i < data.length; i++) {
+          var all = names(data[i].director).concat(names(data[i].actors));
+          for (var j = 0; j < all.length; j++) {
+            if (util.norm(all[j]) === person.norm) {
+              mine.push(data[i]);
+              break;
+            }
+          }
+        }
+        if (!mine.length) {
+          mine = data;
+        }
+        state.items = mine.slice(0, C.SEARCH_MAX_RESULTS);
+        setBody('<p class="xs-label">' + util.esc(title) + "</p>" + moviesHtml(state.items));
+        var first = $body.find(".xs-movie").get(0);
+        if (first) {
+          focus(first);
+        }
+        loadPosters(0);
+      });
+    }
+
+    function loadPosters(upTo) {
+      var imgs = $body.find(".xs-movie img");
+      var limit = Math.max(upTo + 10, 10);
+      for (var i = 0; i < imgs.length && i < limit; i++) {
+        if (!imgs[i].getAttribute("src") && state.items[i] && state.items[i].poster) {
+          imgs[i].setAttribute("src", state.items[i].poster);
+        }
+      }
+    }
+
+    /* ======================================================================
+     * Foco
+     * ==================================================================== */
+    function focusables() {
+      return $root ? $root.find(".xs-f") : $();
+    }
+
+    function focus(el) {
+      if (!el) {
+        return;
+      }
+      if (state.focus && state.focus !== el) {
+        $(state.focus).removeClass("onFocus");
+      }
+      state.focus = el;
+      $(el).addClass("onFocus");
+      ensureVisible(el);
+      var idx = $(el).attr("data-movie");
+      if (idx !== undefined) {
+        loadPosters(parseInt(idx, 10));
+      }
+    }
+
+    function ensureFocusExists() {
+      if (!state.focus || !$.contains(document.documentElement, state.focus)) {
+        state.focus = null;
+        focus($keys.find(".xs-key").get(0));
+      }
+    }
+
+    // Desplaza la columna de resultados para que el foco quede a la vista
+    function setShift(px) {
+      if (!$body) {
+        return;
+      }
+      var value = "translateY(" + Math.round(-px) + "px)";
+      $body.get(0).style.webkitTransform = value;
+      $body.get(0).style.transform = value;
+      $body.data("shift", px);
+    }
+
+    function ensureVisible(el) {
+      if (!$body || !$.contains($body.get(0), el)) {
+        return;
+      }
+      // .xs-body es position: relative, así que offsetTop es relativo a ella
+      var shift = $body.data("shift") || 0;
+      var top = el.offsetTop;
+      var h = el.offsetHeight;
+      var viewH = $body.parent().get(0).clientHeight - $body.get(0).offsetTop;
+      if (top - shift < 0) {
+        setShift(Math.max(0, top - 20));
+      } else if (top + h - shift > viewH) {
+        setShift(top + h - viewH + 20);
+      }
+    }
+
+    /* ======================================================================
+     * Acciones
+     * ==================================================================== */
+    function typeText(text) {
+      if (state.query.length >= 35) {
+        return;
+      }
+      state.query += text;
+      $input.val(state.query);
+      queryChanged();
+    }
+
+    function setQuery(text, immediate) {
+      state.query = text;
+      $input.val(text);
+      if (immediate) {
+        state.view = "results";
+        state.person = null;
+        var q = normQuery(text);
+        if (q.length >= C.SEARCH_MIN_CHARS && !localRefine(q)) {
+          scheduled.cancel();
+          fetchQuery(text);
+        } else if (q.length < C.SEARCH_MIN_CHARS) {
+          queryChanged();
+        }
+      } else {
+        queryChanged();
+      }
+    }
+
+    function startIme() {
+      state.ime = true;
+      $input.prop("readOnly", false).addClass("ime");
+      $input.get(0).focus();
+      try {
+        var len = $input.val().length;
+        $input.get(0).setSelectionRange(len, len);
+      } catch (e) {}
+    }
+
+    function stopIme() {
+      if (!state.ime) {
+        return;
+      }
+      state.ime = false;
+      $input.prop("readOnly", true).removeClass("ime");
+      $input.get(0).blur();
+    }
+
+    function activate(el) {
+      var $el = $(el);
+      if ($el.attr("data-k") !== undefined) {
+        typeText($el.attr("data-k"));
+        return;
+      }
+      var a = $el.attr("data-a");
+      if (a) {
+        if (a === "del") {
+          setQuery(state.query.substring(0, state.query.length - 1));
+        } else if (a === "clear") {
+          setQuery("");
+        } else if (a === "space") {
+          if (state.query && state.query.charAt(state.query.length - 1) !== " ") {
+            typeText(" ");
+          }
+        } else if (a === "mode") {
+          state.mode = state.mode === "alpha" ? "num" : "alpha";
+          renderKeys();
+          focus($keys.find('[data-a="mode"]').get(0));
+        } else if (a === "ime") {
+          startIme();
+        }
+        return;
+      }
+      if ($el.attr("data-recent") !== undefined) {
+        var list = recents();
+        var text = list[parseInt($el.attr("data-recent"), 10)];
+        if (text) {
+          setQuery(text, true);
+        }
+        return;
+      }
+      if ($el.attr("data-clear") !== undefined) {
+        XTV.storage.remove(RECENT_KEY);
+        showRecent();
+        focus($keys.find(".xs-key").get(0));
+        return;
+      }
+      if ($el.attr("data-person") !== undefined) {
+        var person = state.people[parseInt($el.attr("data-person"), 10)];
+        if (person) {
+          showPerson(person);
+        }
+        return;
+      }
+      if ($el.attr("data-movie") !== undefined) {
+        var item = state.items[parseInt($el.attr("data-movie"), 10)];
+        if (item) {
+          saveRecent(state.view === "person" && state.person ? state.person.name : state.query);
+          XTV.actions.openMovie(item, { screen: "search" });
+        }
+      }
+    }
+
+    /* ======================================================================
+     * Pantalla
+     * ==================================================================== */
+    function build() {
+      $root = $(
+        '<div id="xtvSearch">' +
+          '<div class="xs-left"><div class="xs-title">BUSCAR</div>' +
+          '<input id="xsInput" class="xs-input" readonly maxlength="35" autocomplete="off" spellcheck="false">' +
+          '<div class="xs-keys"></div></div>' +
+          '<div class="xs-right"><img class="xs-logo" alt="Xiclos" src="' +
+          util.esc(C.IMG + "logo.png") +
+          '"><div class="xs-status"></div><div class="xs-body"></div></div>' +
+          "</div>"
+      );
+      $input = $root.find("#xsInput");
+      $keys = $root.find(".xs-keys");
+      $status = $root.find(".xs-status");
+      $body = $root.find(".xs-body");
+
+      // Teclado del sistema
+      $input.on("input", function () {
+        if (state.ime) {
+          state.query = String($input.val() || "").substring(0, 35);
+          queryChanged();
+        }
+      });
+      $input.on("blur", function () {
+        if (state.ime) {
+          state.ime = false;
+          $input.prop("readOnly", true).removeClass("ime");
+        }
+      });
+
+      // Puntero
+      $root.on("mousemove", ".xs-f", function () {
+        if (XTV.pointer.isActive() && state.focus !== this) {
+          focus(this);
+        }
+      });
+      $root.on("click", ".xs-f", function (e) {
+        e.preventDefault();
+        focus(this);
+        activate(this);
+      });
+      $root.on("click", "#xsInput", function () {
+        startIme();
+      });
+    }
+
+    function open(prefill) {
+      if (!$root) {
+        build();
+      }
+      XTV.modal.close(true);
+      $("body").append($root);
+      state.open = true;
+      state.mode = "alpha";
+      state.focus = null;
+      state.view = "recent";
+      state.person = null;
+      renderKeys();
+      XTV.setLayer("search");
+      focus($keys.find(".xs-key").get(0));
+      setQuery(prefill || "", !!prefill);
+    }
+
+    function close() {
+      stopIme();
+      scheduled.cancel();
+      XTV.api.abort("suggest");
+      state.gen++;
+      state.open = false;
+      if ($root) {
+        $root.detach();
+      }
+      if (XTV.state.layer === "search") {
+        XTV.setLayer("grid");
+        XTV.grid.refocus();
+      }
+    }
+
+    function handleKey(action) {
+      if (state.ime) {
+        if (action === "LEFT" || action === "RIGHT" || action === "SPACE") {
+          return false; // mueven el cursor / escriben en el campo
+        }
+        if (action === "OK" || action === "DONE" || action === "CANCEL" || action === "BACK") {
+          stopIme();
+          return true;
+        }
+        if (action === "UP" || action === "DOWN") {
+          stopIme();
+        } else {
+          return false;
+        }
+      }
+      if (XTV.keys.isNav(action)) {
+        var next = XTV.nav.pick(focusables(), state.focus, action);
+        if (next) {
+          focus(next);
+        }
+        return true;
+      }
+      if (action === "OK") {
+        if (state.focus) {
+          activate(state.focus);
+        }
+        return true;
+      }
+      if (action === "BACK") {
+        if (state.view === "person") {
+          state.view = "results";
+          state.person = null;
+          var q = normQuery(state.query);
+          if (cache.hasOwnProperty(q)) {
+            showResults(cache[q], q, false);
+          } else {
+            queryChanged();
+          }
+          focus($body.find(".xs-person").get(0) || $keys.find(".xs-key").get(0));
+        } else {
+          close();
+        }
+        return true;
+      }
+      if (action && /^D\d$/.test(action)) {
+        typeText(action.charAt(1));
+        return true;
+      }
+      if (action === "PLAY" || action === "PLAYPAUSE") {
+        var idx = state.focus ? $(state.focus).attr("data-movie") : undefined;
+        if (idx !== undefined && state.items[parseInt(idx, 10)]) {
+          XTV.player.play(state.items[parseInt(idx, 10)]);
+        }
+        return true;
+      }
+      return XTV.keys.isNav(action) || action === "SPACE";
+    }
+
+    XTV.search = {
+      open: open,
+      close: close,
+      handleKey: handleKey,
+      isOpen: function () {
+        return state.open;
+      },
+      refocus: function () {
+        if (state.focus) {
+          $(state.focus).addClass("onFocus");
+        }
+      }
+    };
+  })(window.jQuery, window.XTV);
 }
