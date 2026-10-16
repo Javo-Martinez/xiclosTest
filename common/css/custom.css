@@ -2896,6 +2896,7 @@ body.xtv #xtvPlayerUI .xp-menu {
   position: absolute;
   bottom: 7.4vw;
   min-width: 15.6vw;
+  max-width: 70vw;
   margin-left: 6.25vw;
   padding: 0.47vw;
   border-radius: 0.25vw;
@@ -2903,7 +2904,78 @@ body.xtv #xtvPlayerUI .xp-menu {
   border: 1px solid #2E2E34;
 }
 body.xtv #xtvPlayerUI .xp-menu.on {
-  display: block;
+  display: -webkit-flex;
+  display: flex;
+}
+body.xtv #xtvPlayerUI .xp-col {
+  min-width: 12.5vw;
+  padding: 0 0.31vw;
+}
+body.xtv #xtvPlayerUI .xp-col + .xp-col {
+  border-left: 1px solid #2E2E34;
+}
+body.xtv #xtvPlayerUI .xp-col-h {
+  padding: 0.47vw 0.8vw 0.6vw;
+  font-size: 0.86vw;
+  font-weight: 500;
+  letter-spacing: 0.117vw;
+  text-transform: uppercase;
+  color: #8A8A93;
+}
+body.xtv #xtvPlayerUI .xp-col.active .xp-col-h {
+  color: #F4F4F5;
+}
+/* Fuera de la columna activa, la opción elegida se marca sin resaltar */
+body.xtv #xtvPlayerUI .xp-col:not(.active) .xp-opt.current {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------------------------------------------------------------
+ * Estilo de los subtítulos (tamaño y color elegidos en el panel)
+ * .jw-text-track-cue: los dibuja el reproductor (LG, PC)
+ * video::cue: los dibuja la TV (Samsung)
+ * --------------------------------------------------------------- */
+body.xtv #div_vimeo_player .jw-text-track-cue {
+  background-color: transparent !important;
+  font-family: Roboto, Arial, sans-serif !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  text-shadow: 0 0 0.3vw #000000, 0.08vw 0.08vw 0.16vw #000000, -0.08vw -0.08vw 0.16vw #000000 !important;
+}
+body.xtv #div_vimeo_player video::cue {
+  background-color: transparent;
+  font-family: Roboto, Arial, sans-serif;
+  text-shadow: 0 0 0.3vw #000000, 0.08vw 0.08vw 0.16vw #000000, -0.08vw -0.08vw 0.16vw #000000;
+}
+body.xtv.xtv-cap-s #div_vimeo_player .jw-text-track-cue {
+  font-size: 2vw !important;
+}
+body.xtv.xtv-cap-m #div_vimeo_player .jw-text-track-cue {
+  font-size: 2.6vw !important;
+}
+body.xtv.xtv-cap-l #div_vimeo_player .jw-text-track-cue {
+  font-size: 3.4vw !important;
+}
+body.xtv.xtv-cap-s #div_vimeo_player video::cue {
+  font-size: 2vw;
+}
+body.xtv.xtv-cap-m #div_vimeo_player video::cue {
+  font-size: 2.6vw;
+}
+body.xtv.xtv-cap-l #div_vimeo_player video::cue {
+  font-size: 3.4vw;
+}
+body.xtv.xtv-cap-white #div_vimeo_player .jw-text-track-cue {
+  color: #FFFFFF !important;
+}
+body.xtv.xtv-cap-yellow #div_vimeo_player .jw-text-track-cue {
+  color: #FFE600 !important;
+}
+body.xtv.xtv-cap-white #div_vimeo_player video::cue {
+  color: #FFFFFF;
+}
+body.xtv.xtv-cap-yellow #div_vimeo_player video::cue {
+  color: #FFE600;
 }
 body.xtv #xtvPlayerUI .xp-opt {
   display: -webkit-flex;

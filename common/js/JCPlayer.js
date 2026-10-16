@@ -715,8 +715,10 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       });
       ui.$el.on("click", ".xp-opt", function () {
         if (ui.menu) {
-          ui.menu.index = $(this).index();
-          pickCaption();
+          ui.menu.col = parseInt(this.getAttribute("data-col"), 10) || 0;
+          ui.menu.idx[ui.menu.col] = parseInt(this.getAttribute("data-i"), 10) || 0;
+          applyPanel();
+          uiRender();
         }
       });
       ui.$el.on("click", ".xp-track", function (e) {
@@ -803,15 +805,22 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       ui.$el.find(".xp-btns").html(h);
       ui.$el.find(".xp-bar").toggleClass("onFocus", ui.zone === "bar");
-      // Menú de subtítulos
+      // Panel de subtítulos: Idioma | Tamaño | Color
       var $menu = ui.$el.find(".xp-menu");
       if (ui.menu) {
+        var cols = panelColumns();
         var m = "";
-        for (var j = 0; j < ui.menu.items.length; j++) {
-          m +=
-            '<div class="xp-opt' + (j === ui.menu.index ? " onFocus" : "") + (j === ui.menu.current ? " current" : "") + '">' +
-            (j === ui.menu.current ? XTV.icon("check", "xp-icon") : '<span class="xp-icon"></span>') +
-            "<span>" + util.esc(ui.menu.items[j]) + "</span></div>";
+        for (var c = 0; c < cols.length; c++) {
+          m += '<div class="xp-col' + (c === ui.menu.col ? " active" : "") + '"><div class="xp-col-h">' + cols[c].title + "</div>";
+          for (var j = 0; j < cols[c].items.length; j++) {
+            var sel = j === ui.menu.idx[c];
+            m +=
+              '<div class="xp-opt' + (sel && c === ui.menu.col ? " onFocus" : "") + (sel ? " current" : "") +
+              '" data-col="' + c + '" data-i="' + j + '">' +
+              (sel ? XTV.icon("check", "xp-icon") : '<span class="xp-icon"></span>') +
+              "<span>" + util.esc(cols[c].items[j]) + "</span></div>";
+          }
+          m += "</div>";
         }
         $menu.html(m).addClass("on");
         var $btn = ui.$el.find('.xp-btn[data-id="captions"]');
@@ -991,18 +1000,99 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       uiRender();
     }
 
+    /* Estilo de subtítulos: tamaño y color, guardados en la TV.
+     * Se aplica con clases en <body>: el CSS cubre tanto los subtítulos que
+     * dibuja el reproductor (LG, PC) como los que dibuja la TV (Samsung). */
+    var CAP_SIZES = [
+      { id: "s", label: "Pequeño" },
+      { id: "m", label: "Mediano" },
+      { id: "l", label: "Grande" }
+    ];
+    var CAP_COLORS = [
+      { id: "white", label: "Blanco" },
+      { id: "yellow", label: "Amarillo" }
+    ];
+    var CAP_SIZE_KEY = "xtv_cap_size";
+    var CAP_COLOR_KEY = "xtv_cap_color";
+
+    function indexOfId(list, id, def) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === id) {
+          return i;
+        }
+      }
+      return def;
+    }
+
+    function capStyle() {
+      return {
+        size: indexOfId(CAP_SIZES, XTV.storage.get(CAP_SIZE_KEY), 1),
+        color: indexOfId(CAP_COLORS, XTV.storage.get(CAP_COLOR_KEY), 0)
+      };
+    }
+
+    function applyCapStyle() {
+      var st = capStyle();
+      var $b = $("body");
+      for (var i = 0; i < CAP_SIZES.length; i++) {
+        $b.removeClass("xtv-cap-" + CAP_SIZES[i].id);
+      }
+      for (var j = 0; j < CAP_COLORS.length; j++) {
+        $b.removeClass("xtv-cap-" + CAP_COLORS[j].id);
+      }
+      $b.addClass("xtv-cap-" + CAP_SIZES[st.size].id).addClass("xtv-cap-" + CAP_COLORS[st.color].id);
+    }
+    applyCapStyle();
+
+    function panelColumns() {
+      var c = captions();
+      var langs = [];
+      for (var i = 0; i < c.list.length; i++) {
+        langs.push(captionLabel(c.list[i], i));
+      }
+      var sizes = [];
+      for (var j = 0; j < CAP_SIZES.length; j++) {
+        sizes.push(CAP_SIZES[j].label);
+      }
+      var colors = [];
+      for (var k = 0; k < CAP_COLORS.length; k++) {
+        colors.push(CAP_COLORS[k].label);
+      }
+      return [
+        { title: "Idioma", items: langs },
+        { title: "Tamaño", items: sizes },
+        { title: "Color", items: colors }
+      ];
+    }
+
     function openCaptions() {
       var c = captions();
       if (c.list.length < 2) {
         return;
       }
-      var items = [];
-      for (var i = 0; i < c.list.length; i++) {
-        items.push(captionLabel(c.list[i], i));
-      }
-      ui.menu = { items: items, index: c.cur, current: c.cur };
+      var st = capStyle();
+      ui.menu = { col: 0, idx: [c.cur, st.size, st.color] };
       ui.zone = "menu";
       uiRender();
+    }
+
+    // Aplica en el acto lo elegido en la columna activa
+    function applyPanel() {
+      var m = ui.menu;
+      if (!m) {
+        return;
+      }
+      if (m.col === 0) {
+        if (captions().cur !== m.idx[0]) {
+          setCaptions(m.idx[0]);
+        }
+      } else if (m.col === 1) {
+        XTV.storage.set(CAP_SIZE_KEY, CAP_SIZES[m.idx[1]].id);
+        applyCapStyle();
+      } else {
+        XTV.storage.set(CAP_COLOR_KEY, CAP_COLORS[m.idx[2]].id);
+        applyCapStyle();
+      }
     }
 
     function setCaptions(i) {
@@ -1018,11 +1108,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       toast("Subtítulos: " + captionLabel(c.list[i], i));
     }
 
-    function pickCaption() {
-      if (!ui.menu) {
-        return;
-      }
-      setCaptions(ui.menu.index);
+    function closePanel() {
       ui.menu = null;
       ui.zone = "btn";
       uiRender();
@@ -1107,18 +1193,22 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return true;
       }
 
-      // Menú de subtítulos abierto
+      // Panel de subtítulos abierto: izquierda/derecha cambian de columna,
+      // arriba/abajo eligen (se aplica en el acto), OK o Volver cierran
       if (ui.zone === "menu" && ui.menu) {
-        if (action === "UP") {
-          ui.menu.index = Math.max(0, ui.menu.index - 1);
-        } else if (action === "DOWN") {
-          ui.menu.index = Math.min(ui.menu.items.length - 1, ui.menu.index + 1);
-        } else if (action === "OK") {
-          pickCaption();
+        var m = ui.menu;
+        var cols = panelColumns();
+        if (action === "LEFT") {
+          m.col = Math.max(0, m.col - 1);
+        } else if (action === "RIGHT") {
+          m.col = Math.min(cols.length - 1, m.col + 1);
+        } else if (action === "UP" || action === "DOWN") {
+          var n = cols[m.col].items.length;
+          m.idx[m.col] = Math.max(0, Math.min(n - 1, m.idx[m.col] + (action === "UP" ? -1 : 1)));
+          applyPanel();
+        } else if (action === "OK" || action === "BACK") {
+          closePanel();
           return true;
-        } else if (action === "BACK" || action === "LEFT" || action === "RIGHT") {
-          ui.menu = null;
-          ui.zone = "btn";
         }
         uiRender();
         return true;

@@ -45,6 +45,16 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
 
+## v2.5: estilo de los subtítulos
+
+Cambian `common/js/JCPlayer.js` y `common/css/custom.css`.
+
+- El botón **Subtítulos** abre un panel con tres columnas: **Idioma** (incluye "Desactivados"), **Tamaño** (Pequeño, **Mediano**, Grande) e **Color** (**Blanco**, Amarillo). En negrita, los valores predeterminados.
+- Izquierda/derecha cambian de columna; arriba/abajo eligen y el cambio se ve en el acto; OK o Volver cierran.
+- Tamaño y color se guardan en la TV y valen para todas las películas. Los subtítulos van sin fondo, con contorno oscuro para leerse sobre escenas claras.
+- Funciona tanto si los subtítulos los dibuja el reproductor (LG, PC) como si los dibuja la TV (Samsung). **A verificar en una Samsung.**
+- El botón aparece solo en las películas que tienen pistas de subtítulos (las que los traen quemados en la imagen no se pueden cambiar).
+
 ## v2.4: reproductor, ficha, Cineclub y marca
 
 Cambian `common/js/config.js`, `common/js/JCPlayer.js`, `common/js/xiclos.js` y `common/css/custom.css`.
