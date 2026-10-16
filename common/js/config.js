@@ -43,6 +43,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     SEARCH_MAX_PEOPLE: 8,
     SEARCH_RECENT_MAX: 8,
 
+<<<<<<< HEAD
+=======
+    // Carrusel de Cineclub: cantidad máxima de tarjetas
+    FEATURE_MAX: 5,
+
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     // Pósters: cuántos se cargan por delante y por detrás de lo visible
     POSTERS_AHEAD: 4,
     POSTERS_BEHIND: 2,
@@ -666,6 +672,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     XTV.refocus = function () {
       if (XTV.state.layer === "search" && XTV.search && XTV.search.refocus) {
         XTV.search.refocus();
+<<<<<<< HEAD
+=======
+      } else if (XTV.state.layer === "browse" && XTV.browse && XTV.browse.refocus) {
+        XTV.browse.refocus();
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       } else if (XTV.grid && XTV.grid.refocus) {
         XTV.grid.refocus();
       }
@@ -720,6 +731,37 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     };
 
     /* ======================================================================
+<<<<<<< HEAD
+=======
+     * Íconos (SVG de trazo, heredan el color del texto)
+     * ==================================================================== */
+    var ICONS = {
+      search: '<path d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM16.2 16.2L20 20"/>',
+      home: '<path d="M4 11l8-7l8 7M6 9.5V20h12V9.5"/>',
+      cineclub: '<path d="M4 6h16v12H4zM4 10h16M9 6v4M15 6v4"/>',
+      compass: '<path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM15.5 8.5l-2 5l-5 2l2-5z"/>',
+      star: '<path d="M12 4l2.4 5l5.6.6l-4.2 3.8l1.2 5.6L12 16.2L7 19l1.2-5.6L4 9.6l5.6-.6z"/>',
+      power: '<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>',
+      logout: '<path d="M10 5H5v14h5M15 8l4 4l-4 4M19 12H9"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
+      check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+      backspace: '<path d="M9 5h11v14H9l-6-7zM12.5 9.5l5 5M17.5 9.5l-5 5"/>',
+      space: '<path d="M3 10v5h18v-5"/>',
+      play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>'
+    };
+
+    XTV.icon = function (name, cls) {
+      return (
+        '<svg class="' +
+        (cls || "") +
+        '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        (ICONS[name] || "") +
+        "</svg>"
+      );
+    };
+
+    /* ======================================================================
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
      * Navegación geométrica entre elementos (modales, menús)
      * Elige el elemento más cercano en la dirección pedida según su
      * posición en pantalla, así no depende del orden del DOM.

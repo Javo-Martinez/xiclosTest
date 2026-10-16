@@ -60,6 +60,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return XTV.player.handleKey(action);
         case "search":
           return XTV.search.handleKey(action, event);
+<<<<<<< HEAD
+=======
+        case "browse":
+          return XTV.browse.handleKey(action);
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         case "pin":
           return XTV.login.handleKey(action);
         default:
@@ -121,6 +126,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return;
         }
         XTV.app.booted = true;
+<<<<<<< HEAD
+=======
+        $("body").addClass("xtv");
+        // Pesos de Roboto que usa el diseño (el index.html solo carga el 400)
+        $("head").append('<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500&amp;display=swap">');
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         XTV.net.init();
         XTV.pointer.init();
         try {

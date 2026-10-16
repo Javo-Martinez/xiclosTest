@@ -45,6 +45,36 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
 
+<<<<<<< HEAD
+=======
+## v2.1: diseño y navegación de la búsqueda
+
+Archivos que cambian respecto de la v2: `common/js/config.js`, `utils.js`, `search.js`, `xiclos.js`, `arrows.js`, `JCPlayer.js` y `common/css/custom.css`. El resto queda igual.
+
+### Navegación de la búsqueda
+
+- Derecha desde el teclado cae en la **primera persona**.
+- En Personas, derecha e izquierda avanzan de a una, en orden. Derecha desde la última pasa al **primer afiche**; izquierda desde la primera vuelve al teclado.
+- En los afiches, derecha al final de una fila sigue en la primera de la siguiente e izquierda al principio de una fila vuelve a la última de la anterior. Solo el primer afiche de la primera fila sale al teclado.
+- Arriba desde la primera fila de afiches sube a Personas.
+- Se quitó **"Teclado TV"**: el campo es de solo lectura y se escribe con el teclado propio o los números del control. La fila inferior queda 123 · Borrar · Espacio · Vaciar.
+
+### Diseño
+
+- **Marca:** acento C, un triángulo rojo chico en la esquina superior derecha con el logo al lado. Reemplaza los triángulos y el trapecio grandes.
+- **Fondo:** afiche en color con degradés hacia el fondo (propuesta A), sin gris ni desenfoque. Cambia con un fundido.
+- **Tipografía:** Roboto 300/400/500 (Google Fonts). Los títulos de las tiras van en minúscula inicial.
+- **Afiches:** foco con escala 1,06 y anillo rojo interno, sin borde que se corte. Las imágenes aparecen con un fundido al cargar.
+- **Menú lateral:** íconos en la columna cerrada, con barra roja en la sección actual. Al abrir, el panel ya no es negro sólido: es un degradé que se desvanece hacia la derecha sin borde, entra con desplazamiento y opacidad (200 ms) y el contenido se oscurece con un velo en degradé. Mover el puntero al contenido lo cierra.
+- **Ficha:** tarjeta centrada con afiche, datos, sinopsis, créditos y botones "Ver ahora" y "Agregar a Mi lista" / "En Mi lista".
+- **Confirmaciones y avisos:** mismas tarjetas, con botones redondeados.
+- **Cineclub:** carrusel destacado arriba de las tiras con la película mejor puntuada en IMDb de cada ciclo (máximo 5, sin repetir). Por ahora fijo, sin rotación aleatoria. Avanza solo cada 8 s mientras no tiene el foco. En la tira enfocada, el título suma la película elegida.
+- **Explorar:** pantalla propia con géneros en tarjetas y, al elegir uno, la grilla de películas.
+- **Búsqueda:** campo con ícono, Personas con iniciales y rol ("Dirección" / "Elenco").
+
+Animaciones solo con `transform` y `opacity`, sin desenfoques, pensando en las TVs de 2017.
+
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
 ## Búsqueda predictiva
 
 - **Pantalla:** teclado propio a la izquierda (A-Z, Ñ, 123, Espacio, Borrar, Vaciar) y resultados a la derecha, que se actualizan mientras se escribe.
@@ -53,7 +83,10 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 - **Orden de las películas:** primero las que empiezan con lo escrito, después las que lo contienen, y al final las coincidencias por director o elenco.
 - **Búsquedas recientes:** las últimas 8 se guardan en la TV, se muestran antes de escribir y se pueden borrar. No se pierden al cerrar sesión.
 - **Teclas numéricas del control:** escriben números.
+<<<<<<< HEAD
 - **"Teclado TV"** abre el teclado del sistema (puntero de LG o teclado USB). OK, Volver o Listo lo cierran.
+=======
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
 - **Desde los resultados** se abre la ficha o se reproduce. Al salir del video se vuelve a la búsqueda tal como estaba.
 
 ## Rendimiento
@@ -61,7 +94,11 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 - **Home:** primero 4 tiras y después de a 6 con `offset` a medida que se baja, pidiendo por adelantado cuando faltan 3.
 - **Tiras largas (Estrenos):** se crean 24 pósters de entrada y se agregan más al avanzar, siempre con 12 de margen por delante del foco.
 - **Imágenes:** se cargan solo las visibles y 4 por delante.
+<<<<<<< HEAD
 - **Detalle:** un solo panel (antes había uno oculto por película). El fondo desenfocado cambia 250 ms después de que el foco se detiene.
+=======
+- **Detalle:** un solo panel (antes había uno oculto por película). El fondo cambia 250 ms después de que el foco se detiene.
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
 
 Todos estos valores se ajustan en `XTV.config`, dentro de `common/js/config.js`.
 
@@ -90,6 +127,12 @@ Al menos una LG y una Samsung de 2017 y una nueva de cada una:
 - [ ] Home: recorrer Estrenos hasta el final y volver; bajar por todas las tiras hasta dar la vuelta
 - [ ] Al volver a una tira, el foco está donde se dejó
 - [ ] Mantener apretada una flecha: no se desalinea ni se pierde el foco
+<<<<<<< HEAD
+=======
+- [ ] Cineclub: carrusel destacado (avanza solo cada 8 s, se navega con izquierda/derecha, OK abre la ficha)
+- [ ] Explorar: géneros → películas → ficha; Volver retrocede un nivel
+- [ ] Menú: abre y cierra suave; con el Magic Remote, mover el puntero al contenido lo cierra
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
 - [ ] Menú: Buscar, Inicio, Cineclub, Explorar, Exclusivos (cuenta de alumno), Salir, Cerrar sesión
 - [ ] Ficha: Ver ahora, agregar y quitar de Mi lista
 - [ ] Volver mientras carga una ficha o el video: no aparece nada después
@@ -99,7 +142,12 @@ Al menos una LG y una Samsung de 2017 y una nueva de cada una:
   - [ ] búsqueda sin tildes ("almodovar"); Personas; entrar a una persona
   - [ ] números con 123 y con las teclas del control
   - [ ] búsquedas recientes; borrar recientes
+<<<<<<< HEAD
   - [ ] "Teclado TV"; búsqueda sin resultados
+=======
+  - [ ] búsqueda sin resultados
+  - [ ] navegación: teclado → Personas → afiches y vuelta, con derecha/izquierda
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
   - [ ] reproducir desde la búsqueda y volver
 - [ ] Magic Remote de LG: hover y click en pósters, menú, teclado y botones; después volver a las flechas
 - [ ] Desconectar la red con la app abierta
@@ -111,3 +159,7 @@ Al menos una LG y una Samsung de 2017 y una nueva de cada una:
 - Probar el adaptador de Amazon en un Fire TV.
 - Cambios en el backend (por ejemplo, reducir el tamaño de la respuesta de `home`).
 - Rediseño estilo mobile.
+<<<<<<< HEAD
+=======
+- En la ficha: botón "Desde el principio" y barra de progreso de "Continuar viendo" (están en la guía de diseño, falta el dato del backend).
+>>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
