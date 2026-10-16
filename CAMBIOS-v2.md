@@ -47,7 +47,7 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 ## v2.2: ajustes
 
-Cambian `common/js/xiclos.js`, `common/js/JCPlayer.js`, `common/js/arrows.js` y `common/css/custom.css`.
+Cambian `common/js/config.js`, `common/js/xiclos.js`, `common/js/JCPlayer.js`, `common/js/arrows.js` y `common/css/custom.css`.
 
 - **Primer afiche cortado:** el borde del recorte de las tiras quedaba justo en el afiche con foco y la escala lo cortaba. Ahora hay 0,8 vw de margen.
 - **Bordes:** 0,25 vw en afiches, carrusel, ficha, botones, teclado, Personas y Explorar. Los círculos (iniciales) y los puntos del carrusel no cambian.
@@ -56,6 +56,11 @@ Cambian `common/js/xiclos.js`, `common/js/JCPlayer.js`, `common/js/arrows.js` y 
   2. el afiche original sin achicar (`movies/<id>/slider-2.jpg`);
   3. la miniatura.
   Si una no existe se pasa a la siguiente, y se recuerda para no volver a pedirla. El carrusel de Cineclub y la ficha usan lo mismo.
+- **Cambio de fondo rápido:**
+  - Mientras el foco está quieto se precargan, de a una, las imágenes de los afiches vecinos (2 a la derecha, 1 a la izquierda y 1 más a la derecha). Al moverse, el fondo ya está y cambia en ~120 ms.
+  - Si la imagen todavía no llegó, el fondo anterior se apaga enseguida (no queda el de otra película) y la nueva aparece apenas termina de bajar.
+  - Se guardan en memoria las últimas 24 imágenes cargadas y se muestran tal cual, sin volver a descargarlas.
+- **Final de las tiras:** la tira se frena alineada a un afiche, así el primero que se ve a la izquierda tampoco queda cortado.
 - **Retomar la película:**
   - El salto a la posición guardada se verifica 2 s después y se reintenta hasta 3 veces (algunas TVs ignoran el primero).
   - Mientras el salto no llegue, no se guarda nada: un salto fallido ya no pisa la posición con 0.

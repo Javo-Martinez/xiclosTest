@@ -51,7 +51,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     POSTERS_BEHIND: 2,
 
     // Retraso para cambiar el fondo desenfocado (evita recalcularlo con cada tecla)
-    BACKGROUND_DELAY_MS: 250,
+    BACKGROUND_DELAY_MS: 120,
 
     // PIN de sincronización
     PIN_RENEW_SECONDS: 60,

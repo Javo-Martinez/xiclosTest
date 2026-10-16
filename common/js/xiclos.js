@@ -311,7 +311,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       var n = row.items.length;
       var avail = viewportWidth() - layout.baseLeft - 30;
-      var maxOffset = Math.max(0, n * w - avail);
+      // Al final de la tira se frena en un múltiplo del ancho del afiche:
+      // así el primero que se ve a la izquierda nunca queda cortado.
+      var maxOffset = Math.max(0, Math.ceil((n * w - avail) / w) * w);
       var target = Math.min(row.col * w, maxOffset);
       if (fromPointer) {
         // Con el puntero solo se desplaza si el póster no se ve completo
@@ -412,14 +414,60 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       return list;
     }
 
-    // Recuerda qué imágenes no existen para no volver a pedirlas
-    var badImg = {};
+    /* Caché de imágenes grandes
+     * Cada imagen se pide una sola vez. Las cargadas se guardan (hasta
+     * IMG_KEEP) para mostrarlas al instante si se vuelve a ellas; las que no
+     * existen se recuerdan para no volver a pedirlas. */
+    var IMG_KEEP = 24;
+    var imgs = {};
+    var imgOrder = [];
+
+    function imgState(src) {
+      return imgs[src] ? imgs[src].state : "";
+    }
+
+    function loadImg(src, cb) {
+      var e = imgs[src];
+      if (e) {
+        if (e.state === "loading") {
+          if (cb) {
+            e.cbs.push(cb);
+          }
+        } else if (cb) {
+          cb(e.state === "ok");
+        }
+        return;
+      }
+      e = imgs[src] = { state: "loading", cbs: cb ? [cb] : [], img: new Image() };
+      var finish = function (ok) {
+        e.state = ok ? "ok" : "bad";
+        e.img.onload = e.img.onerror = null;
+        if (ok) {
+          imgOrder.push(src);
+          while (imgOrder.length > IMG_KEEP) {
+            delete imgs[imgOrder.shift()];
+          }
+        }
+        var cbs = e.cbs;
+        e.cbs = [];
+        for (var i = 0; i < cbs.length; i++) {
+          cbs[i](ok);
+        }
+      };
+      e.img.onload = function () {
+        finish(true);
+      };
+      e.img.onerror = function () {
+        finish(false);
+      };
+      e.img.src = src;
+    }
 
     // Carga la primera imagen de la lista que exista y llama a done(opción)
     function firstLoadable(list, done) {
       var i = 0;
       (function next() {
-        while (i < list.length && badImg[list[i].src]) {
+        while (i < list.length && imgState(list[i].src) === "bad") {
           i++;
         }
         if (i >= list.length) {
@@ -427,45 +475,137 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return;
         }
         var opt = list[i];
-        var img = new Image();
-        img.onload = function () {
-          done(opt);
-        };
-        img.onerror = function () {
-          badImg[opt.src] = true;
-          i++;
-          next();
-        };
-        img.src = opt.src;
+        loadImg(opt.src, function (ok) {
+          if (ok) {
+            done(opt);
+          } else {
+            i++;
+            next();
+          }
+        });
       })();
     }
 
-    // Fondo con fundido cruzado entre dos capas (solo opacity, sin blur)
-    var setBackground = util.debounce(function (item) {
+    // Pone en el contenedor la misma imagen ya cargada (no un fondo CSS con
+    // la URL): así el televisor no la vuelve a descargar ni a decodificar.
+    function putImg(box, src) {
+      var e = imgs[src];
+      var img = e && e.state === "ok" ? e.img : null;
+      if (!img) {
+        img = new Image();
+        img.src = src;
+      }
+      if (img.parentNode && img.parentNode !== box) {
+        // Ya se está mostrando en otro lado: copia (sale de la caché)
+        img = img.cloneNode(false);
+      }
+      while (box.firstChild) {
+        box.removeChild(box.firstChild);
+      }
+      img.alt = "";
+      box.appendChild(img);
+    }
+
+    // Mejor imagen ya cargada de la lista (sin la miniatura, que se ve pixelada)
+    function bestLoaded(list) {
+      for (var i = 0; i < list.length; i++) {
+        var st = imgState(list[i].src);
+        if (st === "ok") {
+          return list[i];
+        }
+        if (st !== "bad") {
+          return null; // la mejor todavía puede llegar
+        }
+      }
+      return null;
+    }
+
+    function showLayer(opt) {
       var layers = $("#mainContainer .xb-layer").get();
+      if (layers.length < 2) {
+        return;
+      }
+      if (bgState.shown === opt.src) {
+        return;
+      }
+      bgState.shown = opt.src;
+      var next = layers[1 - bgState.idx];
+      putImg(next, opt.src);
+      next.className = "xb-layer" + (opt.wide ? " wide" : "");
+      next.style.opacity = "1";
+      layers[bgState.idx].style.opacity = "0";
+      bgState.idx = 1 - bgState.idx;
+    }
+
+    function hideLayers() {
+      bgState.shown = "";
+      $("#mainContainer .xb-layer").css("opacity", "0");
+    }
+
+    // Fondo con fundido cruzado entre dos capas (solo opacity, sin blur).
+    // Si la imagen ya está cargada se muestra en el acto; si no, el fondo
+    // anterior se apaga enseguida (para no quedar con el de otra película)
+    // y la nueva aparece apenas llega.
+    function applyBackground(item) {
       var key = item ? item.poster || "" : "";
-      if (layers.length < 2 || key === bgState.src) {
+      if (key === bgState.src) {
         return;
       }
       bgState.src = key;
-      var cur = layers[bgState.idx];
       var list = backgroundsOf(item);
       if (!list.length) {
-        cur.style.opacity = "0";
+        hideLayers();
         return;
       }
+      var ready = bestLoaded(list);
+      if (ready) {
+        showLayer(ready);
+        return;
+      }
+      hideLayers();
       firstLoadable(list, function (opt) {
-        if (bgState.src !== key || !opt) {
+        if (bgState.src === key && opt) {
+          showLayer(opt);
+        }
+      });
+    }
+    var setBackground = util.debounce(applyBackground, C.BACKGROUND_DELAY_MS);
+
+    // Precarga el fondo de los vecinos del foco para que, al moverse, ya esté.
+    // De a una imagen por vez y solo si el foco sigue en el mismo lugar.
+    var prefetchGen = 0;
+    var prefetchLater = util.debounce(function (items) {
+      var myGen = ++prefetchGen;
+      var k = 0;
+      (function next() {
+        if (myGen !== prefetchGen || k >= items.length) {
           return;
         }
-        var next = layers[1 - bgState.idx];
-        next.style.backgroundImage = util.cssUrl(opt.src);
-        next.className = "xb-layer" + (opt.wide ? " wide" : "");
-        next.style.opacity = "1";
-        layers[bgState.idx].style.opacity = "0";
-        bgState.idx = 1 - bgState.idx;
-      });
-    }, C.BACKGROUND_DELAY_MS);
+        var list = backgroundsOf(items[k++]);
+        if (!list.length || bestLoaded(list)) {
+          next();
+          return;
+        }
+        firstLoadable(list, function () {
+          next();
+        });
+      })();
+    }, 400);
+
+    function prefetchAround(row) {
+      if (!row || !row.items) {
+        return;
+      }
+      var items = [];
+      var order = [1, 2, -1, 3];
+      for (var i = 0; i < order.length; i++) {
+        var it = row.items[row.col + order[i]];
+        if (it) {
+          items.push(it);
+        }
+      }
+      prefetchLater(items);
+    }
 
     function metaHtml(item) {
       var parts = [];
@@ -582,7 +722,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       h += '<div class="xf-card' + (s.onFeature && XTV.state.layer === "grid" ? " onFocus" : "") + '">';
       h += '<div class="xf-bg" style="background-image:' + util.esc(util.cssUrl(big)) + '"></div>';
-      if (land && !badImg[land]) {
+      if (land && imgState(land) !== "bad") {
         h += '<div class="xf-bg wide" data-src="' + util.esc(land) + '"></div>';
       }
       h += '<div class="xf-scrim"></div>';
@@ -606,7 +746,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         var src = wide.getAttribute("data-src");
         firstLoadable([{ src: src, wide: true }], function (opt) {
           if (opt && wide.parentNode) {
-            wide.style.backgroundImage = util.cssUrl(src);
+            putImg(wide, src);
             wide.className = "xf-bg wide ok";
           }
         });
@@ -675,6 +815,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         renderSub(s);
       } else {
         renderDetails(s.currentItem());
+        prefetchAround(row);
       }
       ensureImages(row);
       if (s.rows.length > 1) {
