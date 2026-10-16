@@ -11,8 +11,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
    * Xiclos TV v2 - reproductor (reemplaza JCPlayer.js)
    *
    * - Volver o Stop durante la carga cancela: la película no arranca después.
-   * - Teclas: OK / Play / Pausa / Play-Pausa, izquierda-derecha (10 s),
-   *   adelantar-retroceder (30 s), azul (subtítulos), Volver / Stop (salir).
+   * - Barra propia (aparece con cualquier tecla): progreso, Play/Pausa,
+   *   "Desde el inicio", "Subtítulos" y, donde el reproductor lo ofrece,
+   *   "Transmitir". Las teclas de cada parte están en handleKey.
+   * - Adelantar/atrasar acumula: mientras se aprieta se mueve solo el
+   *   indicador y se salta una vez al soltar. El paso crece si se mantiene.
    * - El progreso se guarda cada 15 s, al pausar y al salir. Al pasar el
    *   95 % se borra del historial, como antes.
    *
@@ -23,6 +26,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     var C = XTV.config;
     var P = XTV.paths;
+    var util = XTV.util;
     var CONTAINER_ID = "div_vimeo_player";
 
     var ua = navigator.userAgent || "";
@@ -33,6 +37,118 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var session = null; // reproducción en curso
     var gen = 0;
     var library = null;
+
+    /* ----------------------------------------------------------------------
+     * Posiciones guardadas (para "Seguir viendo" en la ficha)
+     * Lo que se guarda desde esta TV se recuerda acá; además se consulta
+     * "Lo que ya viste" para lo visto en otros equipos.
+     * -------------------------------------------------------------------- */
+    var RESUME_KEY = "xtv_resume";
+    var RESUME_MAX = 200;
+    var historyCache = { at: 0, req: null, map: null };
+
+    function resumeMap() {
+      try {
+        return JSON.parse(XTV.storage.get(RESUME_KEY) || "{}") || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function resumeSet(movieId, seconds) {
+      if (movieId === undefined || movieId === null) {
+        return;
+      }
+      var m = resumeMap();
+      var k = String(movieId);
+      if (seconds > 0) {
+        m[k] = { t: Math.floor(seconds), at: new Date().getTime() };
+      } else {
+        delete m[k];
+      }
+      // Solo las más recientes
+      var keys = [];
+      for (var id in m) {
+        if (m.hasOwnProperty(id)) {
+          keys.push(id);
+        }
+      }
+      if (keys.length > RESUME_MAX) {
+        keys.sort(function (a, b) {
+          return m[a].at - m[b].at;
+        });
+        for (var i = 0; i < keys.length - RESUME_MAX; i++) {
+          delete m[keys[i]];
+        }
+      }
+      XTV.storage.set(RESUME_KEY, JSON.stringify(m));
+      historyCache.at = 0; // la lista del servidor puede haber cambiado
+    }
+
+    // Segundos guardados que trae un objeto de película, si los trae
+    function secondsIn(obj) {
+      var f = ["resumePoint", "resume_point", "resumepoint", "time", "progress", "position", "seconds"];
+      for (var i = 0; i < f.length; i++) {
+        var v = parseFloat(obj && obj[f[i]]);
+        if (v > 0) {
+          return v;
+        }
+      }
+      return 0;
+    }
+
+    function historyMap() {
+      var now = new Date().getTime();
+      if (historyCache.map && now - historyCache.at < 60000) {
+        return $.Deferred().resolve(historyCache.map).promise();
+      }
+      if (historyCache.req && historyCache.req.state() === "pending") {
+        return historyCache.req;
+      }
+      var d = $.Deferred();
+      historyCache.req = d.promise();
+      XTV.api
+        .get(P.userHistory, null, "movie", { timeout: 4000 })
+        .done(function (res) {
+          var map = {};
+          var data = (res && res.data) || [];
+          for (var i = 0; i < data.length; i++) {
+            if (data[i] && data[i].movieId !== undefined) {
+              map[String(data[i].movieId)] = secondsIn(data[i]) || -1; // -1: figura sin tiempo
+            }
+          }
+          historyCache.map = map;
+          historyCache.at = new Date().getTime();
+          d.resolve(map);
+        })
+        .fail(function () {
+          d.resolve(historyCache.map || {});
+        });
+      return historyCache.req;
+    }
+
+    // Promesa con { seconds } si la película está empezada, o null
+    function lookupResume(item) {
+      var d = $.Deferred();
+      if (!item) {
+        return d.resolve(null).promise();
+      }
+      var id = String(item.movieId);
+      var local = resumeMap()[id];
+      var own = secondsIn(item);
+      historyMap().done(function (map) {
+        var remote = map[id];
+        var secs = Math.max(local ? local.t : 0, own, remote > 0 ? remote : 0);
+        if (secs >= C.RESUME_MIN_SECONDS) {
+          d.resolve({ seconds: secs });
+        } else if (remote === -1 && C.RESUME_FROM_HISTORY_LIST && !(local && local.t === 0)) {
+          d.resolve({ seconds: 0 });
+        } else {
+          d.resolve(null);
+        }
+      });
+      return d.promise();
+    }
 
     function loadLibrary() {
       if (window.jwplayer) {
@@ -111,6 +227,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return;
       }
       s.lastSaved = seconds;
+      resumeSet(s.item.movieId, seconds);
       lastSave = XTV.api
         .request({
           method: "PUT",
@@ -149,6 +266,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return;
       }
       s.done = true;
+      resumeSet(s.item.movieId, 0);
       if (s.progressId === undefined || s.progressId === null) {
         return;
       }
@@ -175,7 +293,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ----------------------------------------------------------------------
      * Ciclo de vida
      * -------------------------------------------------------------------- */
-    function play(item) {
+    // opts.fromStart: empieza desde 0 aunque haya una posición guardada
+    function play(item, opts) {
+      opts = opts || {};
       if (!item || !item.mediaId) {
         XTV.message.show("Esta película no está disponible en este momento.");
         return;
@@ -220,6 +340,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           var data = (res && res.data) || {};
           s.resumePoint = Math.max(0, parseFloat(data.resumePoint) || 0);
           s.progressId = data.progressId;
+          if (opts.fromStart) {
+            s.resumePoint = 0;
+          } else if (s.resumePoint > 0) {
+            resumeSet(item.movieId, s.resumePoint);
+          }
           s.lastSaved = s.resumePoint;
           fetchPlaylistItem(item.mediaId)
             .done(function (playlistItem) {
@@ -271,6 +396,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           $(player.getContainer()).addClass("jw-flag-fullscreen");
         } catch (e) {}
         player.play();
+        uiStart(s);
       });
 
       player.on("firstFrame", function () {
@@ -305,6 +431,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return;
         }
         var pos = e.position || 0;
+        uiTick();
         if (!s.tracking && pos >= s.resumePoint - 5) {
           s.tracking = true;
         }
@@ -345,12 +472,35 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         stop(true);
       });
 
+      // Subtítulos: se respeta la última elección (idioma o desactivados);
+      // si no hay ninguna, el primero disponible, como antes.
       player.on("captionsList", function (list) {
-        if (list && list.tracks && list.tracks.length > 1) {
-          try {
-            player.setCurrentCaptions(1);
-          } catch (e) {}
+        var tracks = (list && list.tracks) || [];
+        if (tracks.length < 2) {
+          return;
         }
+        var pref = XTV.storage.get(CAPS_KEY);
+        var idx = 1;
+        if (pref === "off") {
+          idx = 0;
+        } else if (pref) {
+          for (var i = 1; i < tracks.length; i++) {
+            if (tracks[i].label === pref) {
+              idx = i;
+            }
+          }
+        }
+        try {
+          if (player.getCurrentCaptions() !== idx) {
+            player.setCurrentCaptions(idx);
+          }
+        } catch (e) {}
+        uiRender();
+      });
+      player.on("play", uiRender);
+      player.on("pause", function () {
+        uiRender();
+        uiShow();
       });
 
       var onError = function (err) {
@@ -467,27 +617,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         } catch (e) {}
       }
       $("#" + CONTAINER_ID).removeClass("jw-flag-fullscreen");
+      uiStop();
       if (s && XTV.state.layer === "video") {
         XTV.setLayer(s.returnLayer || "grid");
         XTV.refocus();
       }
-    }
-
-    function seekBy(seconds) {
-      var s = session;
-      if (!s || !s.player || s.loading) {
-        return;
-      }
-      try {
-        var pos = s.player.getPosition() || 0;
-        var dur = durationOf(s);
-        var target = Math.max(0, pos + seconds);
-        if (dur > 0) {
-          target = Math.min(target, dur - 1);
-        }
-        s.player.seek(target);
-        s.tracking = true;
-      } catch (e) {}
     }
 
     function togglePlay(force) {
@@ -505,61 +639,550 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       } catch (e) {}
     }
 
-    function nextCaptions() {
+    /* ----------------------------------------------------------------------
+     * Barra propia
+     * -------------------------------------------------------------------- */
+    var CAPS_KEY = "xtv_captions";
+    var ui = {
+      $el: null,
+      shown: false,
+      zone: "bar", // bar | btn | menu
+      btn: 0,
+      menu: null, // { items: [...], index }
+      hideTimer: null,
+      toastTimer: null,
+      scrub: { target: null, timer: null, last: 0, start: 0 }
+    };
+
+    function pad(n) {
+      return n < 10 ? "0" + n : String(n);
+    }
+
+    function fmt(sec) {
+      sec = Math.max(0, Math.floor(sec || 0));
+      var h = Math.floor(sec / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      var x = sec % 60;
+      return h ? h + ":" + pad(m) + ":" + pad(x) : m + ":" + pad(x);
+    }
+
+    function position() {
+      var s = session;
+      try {
+        return (s && s.player && s.player.getPosition()) || 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    function isPlaying() {
+      var s = session;
+      try {
+        var st = s && s.player ? s.player.getState() : "";
+        return st === "playing" || st === "buffering";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function buildUI() {
+      if (ui.$el) {
+        return;
+      }
+      ui.$el = $(
+        '<div id="xtvPlayerUI">' +
+          '<div class="xp-shade"></div>' +
+          '<div class="xp-top"><div class="xp-title"></div></div>' +
+          '<div class="xp-bottom">' +
+          '<div class="xp-bar"><div class="xp-track"><div class="xp-fill"></div><div class="xp-knob"></div></div><div class="xp-tip"></div></div>' +
+          '<div class="xp-row"><div class="xp-btns"></div><div class="xp-time"></div></div>' +
+          "</div>" +
+          '<div class="xp-menu"></div>' +
+          '<div class="xp-toast"></div>' +
+          "</div>"
+      );
+      $("body").append(ui.$el);
+      // Con el puntero (Magic Remote): moverlo muestra la barra
+      $(document).on("mousemove", function () {
+        if (session && XTV.state.layer === "video" && XTV.pointer && XTV.pointer.isActive()) {
+          uiShow();
+        }
+      });
+      ui.$el.on("click", ".xp-btn", function () {
+        ui.zone = "btn";
+        ui.btn = $(this).index();
+        activate();
+      });
+      ui.$el.on("click", ".xp-opt", function () {
+        if (ui.menu) {
+          ui.menu.index = $(this).index();
+          pickCaption();
+        }
+      });
+      ui.$el.on("click", ".xp-track", function (e) {
+        var s = session;
+        var dur = s ? durationOf(s) : 0;
+        var r = this.getBoundingClientRect();
+        if (dur > 0 && r.width > 0) {
+          ui.scrub.target = Math.max(0, Math.min(dur - 1, ((e.clientX - r.left) / r.width) * dur));
+          commitScrub();
+        }
+      });
+    }
+
+    function castButton() {
+      var s = session;
+      if (!s || !s.player) {
+        return null;
+      }
+      try {
+        var $c = $(s.player.getContainer());
+        if (!$c.hasClass("jw-flag-cast-available") && !$c.hasClass("jw-flag-airplay-available")) {
+          return null;
+        }
+        var $b = $c.find("google-cast-launcher, .jw-icon-cast, .jw-icon-airplay").first();
+        return $b.length ? $b.get(0) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function captions() {
+      var s = session;
+      var list = [];
+      var cur = 0;
+      try {
+        list = s.player.getCaptionsList() || [];
+        cur = s.player.getCurrentCaptions() || 0;
+      } catch (e) {}
+      return { list: list, cur: cur };
+    }
+
+    function captionLabel(track, i) {
+      if (!i) {
+        return "Desactivados";
+      }
+      return (track && track.label) || "Subtítulos " + i;
+    }
+
+    // Botones según lo que ofrece esta película / equipo
+    function buttons() {
+      var b = [{ id: "play", icon: isPlaying() ? "pause" : "play", label: isPlaying() ? "Pausa" : "Reproducir" }];
+      b.push({ id: "restart", icon: "restart", label: "Desde el inicio" });
+      var c = captions();
+      if (c.list.length > 1) {
+        b.push({ id: "captions", icon: "cc", label: "Subtítulos: " + captionLabel(c.list[c.cur], c.cur) });
+      }
+      if (castButton()) {
+        b.push({ id: "cast", icon: "cast", label: "Transmitir" });
+      }
+      return b;
+    }
+
+    function uiRender() {
+      var s = session;
+      if (!ui.$el || !s) {
+        return;
+      }
+      ui.$el.toggleClass("on", ui.shown);
+      $("body").toggleClass("xtv-player-ui", ui.shown);
+      if (!ui.shown) {
+        return;
+      }
+      var list = buttons();
+      if (ui.btn >= list.length) {
+        ui.btn = list.length - 1;
+      }
+      var h = "";
+      for (var i = 0; i < list.length; i++) {
+        var f = ui.zone === "btn" && i === ui.btn;
+        h +=
+          '<div class="xp-btn' + (f ? " onFocus" : "") + '" data-id="' + list[i].id + '">' +
+          XTV.icon(list[i].icon, "xp-icon") +
+          "<span>" + util.esc(list[i].label) + "</span></div>";
+      }
+      ui.$el.find(".xp-btns").html(h);
+      ui.$el.find(".xp-bar").toggleClass("onFocus", ui.zone === "bar");
+      // Menú de subtítulos
+      var $menu = ui.$el.find(".xp-menu");
+      if (ui.menu) {
+        var m = "";
+        for (var j = 0; j < ui.menu.items.length; j++) {
+          m +=
+            '<div class="xp-opt' + (j === ui.menu.index ? " onFocus" : "") + (j === ui.menu.current ? " current" : "") + '">' +
+            (j === ui.menu.current ? XTV.icon("check", "xp-icon") : '<span class="xp-icon"></span>') +
+            "<span>" + util.esc(ui.menu.items[j]) + "</span></div>";
+        }
+        $menu.html(m).addClass("on");
+        var $btn = ui.$el.find('.xp-btn[data-id="captions"]');
+        if ($btn.length) {
+          $menu.css("left", $btn.get(0).offsetLeft + "px");
+        }
+      } else {
+        $menu.removeClass("on").empty();
+      }
+      uiTick();
+    }
+
+    function uiTick() {
+      var s = session;
+      if (!ui.$el || !ui.shown || !s) {
+        return;
+      }
+      var dur = durationOf(s);
+      var pos = position();
+      var shownPos = ui.scrub.target !== null ? ui.scrub.target : pos;
+      var pct = dur > 0 ? Math.max(0, Math.min(100, (shownPos / dur) * 100)) : 0;
+      ui.$el.find(".xp-fill").css("width", pct + "%");
+      ui.$el.find(".xp-knob").css("left", pct + "%");
+      var $tip = ui.$el.find(".xp-tip");
+      if (ui.scrub.target !== null) {
+        var delta = ui.scrub.target - pos;
+        $tip
+          .text(fmt(ui.scrub.target) + "  (" + (delta >= 0 ? "+" : "−") + fmt(Math.abs(delta)) + ")")
+          .css("left", pct + "%")
+          .addClass("on");
+      } else {
+        $tip.removeClass("on");
+      }
+      ui.$el.find(".xp-time").text(fmt(shownPos) + " / " + fmt(dur));
+    }
+
+    function scheduleHide() {
+      clearTimeout(ui.hideTimer);
+      ui.hideTimer = setTimeout(function () {
+        // Pausado, con el menú abierto o eligiendo destino, la barra se queda
+        if (session && isPlaying() && !ui.menu && ui.scrub.target === null) {
+          uiHide();
+        } else if (session) {
+          scheduleHide();
+        }
+      }, C.PLAYER_UI_HIDE_MS);
+    }
+
+    function uiShow(zone) {
+      if (!session || !ui.$el) {
+        return;
+      }
+      if (!ui.shown) {
+        ui.shown = true;
+        ui.zone = zone || "bar";
+      }
+      uiRender();
+      scheduleHide();
+    }
+
+    function uiHide() {
+      ui.shown = false;
+      ui.menu = null;
+      ui.zone = "bar";
+      clearTimeout(ui.hideTimer);
+      uiRender();
+    }
+
+    function uiStart(s) {
+      buildUI();
+      ui.btn = 0;
+      ui.menu = null;
+      ui.scrub.target = null;
+      ui.$el.find(".xp-title").text(util.plain(s.item.title));
+      ui.$el.addClass("active");
+      uiShow("bar");
+    }
+
+    function uiStop() {
+      clearTimeout(ui.scrub.timer);
+      clearTimeout(ui.hideTimer);
+      ui.scrub.target = null;
+      ui.menu = null;
+      ui.shown = false;
+      if (ui.$el) {
+        ui.$el.removeClass("on active");
+      }
+      $("body").removeClass("xtv-player-ui");
+    }
+
+    function toast(text) {
+      if (!ui.$el) {
+        return;
+      }
+      var $t = ui.$el.find(".xp-toast");
+      $t.text(text).addClass("on");
+      clearTimeout(ui.toastTimer);
+      ui.toastTimer = setTimeout(function () {
+        $t.removeClass("on");
+      }, 2500);
+    }
+
+    /* Adelantar / atrasar acumulando */
+    function scrub(dir, long) {
       var s = session;
       if (!s || !s.player || s.loading) {
         return;
       }
+      var sc = ui.scrub;
+      var now = new Date().getTime();
+      if (now - sc.last > C.SEEK_CHAIN_MS) {
+        sc.start = now;
+      }
+      sc.last = now;
+      var step = C.SEEK_SHORT_SECONDS;
+      var acc = C.SEEK_ACCEL || [];
+      for (var i = 0; i < acc.length; i++) {
+        if (now - sc.start >= acc[i][0]) {
+          step = acc[i][1];
+        }
+      }
+      if (long) {
+        step = Math.max(step, C.SEEK_LONG_SECONDS);
+      }
+      var dur = durationOf(s);
+      var base = sc.target !== null ? sc.target : position();
+      var t = Math.max(0, base + dir * step);
+      if (dur > 0) {
+        t = Math.min(t, dur - 1);
+      }
+      sc.target = t;
+      uiShow("bar");
+      ui.zone = "bar";
+      uiRender();
+      clearTimeout(sc.timer);
+      sc.timer = setTimeout(commitScrub, C.SEEK_COMMIT_MS);
+    }
+
+    function commitScrub() {
+      var s = session;
+      var sc = ui.scrub;
+      clearTimeout(sc.timer);
+      if (!s || !s.player || sc.target === null) {
+        sc.target = null;
+        return;
+      }
+      var t = sc.target;
+      sc.target = null;
       try {
-        var list = s.player.getCaptionsList() || [];
-        if (!list.length) {
-          return;
-        }
-        var next = s.player.getCurrentCaptions() + 1;
-        if (next >= list.length) {
-          next = 0;
-        }
-        s.player.setCurrentCaptions(next);
+        s.player.seek(t);
+        s.tracking = true;
       } catch (e) {}
+      uiRender();
+      scheduleHide();
+    }
+
+    function cancelScrub() {
+      clearTimeout(ui.scrub.timer);
+      ui.scrub.target = null;
+      uiRender();
+    }
+
+    function restart() {
+      var s = session;
+      if (!s || !s.player) {
+        return;
+      }
+      cancelScrub();
+      try {
+        s.player.seek(0);
+        s.tracking = true;
+        if (!isPlaying()) {
+          s.player.play();
+        }
+      } catch (e) {}
+      toast("Desde el inicio");
+      uiRender();
+    }
+
+    function openCaptions() {
+      var c = captions();
+      if (c.list.length < 2) {
+        return;
+      }
+      var items = [];
+      for (var i = 0; i < c.list.length; i++) {
+        items.push(captionLabel(c.list[i], i));
+      }
+      ui.menu = { items: items, index: c.cur, current: c.cur };
+      ui.zone = "menu";
+      uiRender();
+    }
+
+    function setCaptions(i) {
+      var s = session;
+      var c = captions();
+      if (!s || i < 0 || i >= c.list.length) {
+        return;
+      }
+      try {
+        s.player.setCurrentCaptions(i);
+      } catch (e) {}
+      XTV.storage.set(CAPS_KEY, i ? c.list[i].label || "" : "off");
+      toast("Subtítulos: " + captionLabel(c.list[i], i));
+    }
+
+    function pickCaption() {
+      if (!ui.menu) {
+        return;
+      }
+      setCaptions(ui.menu.index);
+      ui.menu = null;
+      ui.zone = "btn";
+      uiRender();
+    }
+
+    // Azul: pasa al siguiente (incluye "Desactivados")
+    function nextCaptions() {
+      var c = captions();
+      if (c.list.length < 2) {
+        return;
+      }
+      setCaptions((c.cur + 1) % c.list.length);
+      uiRender();
+    }
+
+    function activate() {
+      var list = buttons();
+      var b = list[ui.btn];
+      if (!b) {
+        return;
+      }
+      if (b.id === "play") {
+        togglePlay();
+      } else if (b.id === "restart") {
+        restart();
+      } else if (b.id === "captions") {
+        openCaptions();
+      } else if (b.id === "cast") {
+        var el = castButton();
+        if (el) {
+          try {
+            el.click();
+          } catch (e) {}
+        }
+      }
+      uiRender();
     }
 
     function handleKey(action) {
+      var s = session;
+      if (action === "STOP") {
+        stop(true);
+        return true;
+      }
+      if (!s) {
+        return true;
+      }
+      var wasShown = ui.shown;
+      if (action !== "BACK") {
+        uiShow();
+      } else {
+        scheduleHide();
+      }
+
+      // Teclas que hacen lo mismo en cualquier lugar
       switch (action) {
-        case "BACK":
-        case "STOP":
-          stop(true);
-          return true;
-        case "OK":
-        case "SPACE":
-        case "PLAYPAUSE":
-          togglePlay();
-          return true;
         case "PLAY":
           togglePlay("play");
+          uiRender();
           return true;
         case "PAUSE":
           togglePlay("pause");
+          uiRender();
           return true;
-        case "LEFT":
-          seekBy(-C.SEEK_SHORT_SECONDS);
-          return true;
-        case "RIGHT":
-          seekBy(C.SEEK_SHORT_SECONDS);
+        case "PLAYPAUSE":
+        case "SPACE":
+          togglePlay();
+          uiRender();
           return true;
         case "RW":
-          seekBy(-C.SEEK_LONG_SECONDS);
+          if (ui.zone !== "menu") {
+            scrub(-1, true);
+          }
           return true;
         case "FF":
-          seekBy(C.SEEK_LONG_SECONDS);
+          if (ui.zone !== "menu") {
+            scrub(1, true);
+          }
           return true;
         case "BLUE":
           nextCaptions();
           return true;
+      }
+
+      // Menú de subtítulos abierto
+      if (ui.zone === "menu" && ui.menu) {
+        if (action === "UP") {
+          ui.menu.index = Math.max(0, ui.menu.index - 1);
+        } else if (action === "DOWN") {
+          ui.menu.index = Math.min(ui.menu.items.length - 1, ui.menu.index + 1);
+        } else if (action === "OK") {
+          pickCaption();
+          return true;
+        } else if (action === "BACK" || action === "LEFT" || action === "RIGHT") {
+          ui.menu = null;
+          ui.zone = "btn";
+        }
+        uiRender();
+        return true;
+      }
+
+      if (action === "BACK") {
+        if (ui.scrub.target !== null) {
+          cancelScrub(); // Volver mientras se elige destino: se queda donde estaba
+        } else if (wasShown) {
+          uiHide();
+        } else {
+          stop(true);
+        }
+        return true;
+      }
+
+      // Barra de progreso
+      if (ui.zone === "bar") {
+        switch (action) {
+          case "LEFT":
+            scrub(-1, false);
+            return true;
+          case "RIGHT":
+            scrub(1, false);
+            return true;
+          case "OK":
+            if (!wasShown) {
+              return true; // la primera tecla solo muestra la barra
+            }
+            if (ui.scrub.target !== null) {
+              commitScrub();
+            } else {
+              togglePlay();
+            }
+            uiRender();
+            return true;
+          case "DOWN":
+            if (wasShown) {
+              commitScrub();
+              ui.zone = "btn";
+              uiRender();
+            }
+            return true;
+        }
+        return true;
+      }
+
+      // Botones
+      switch (action) {
+        case "LEFT":
+          ui.btn = Math.max(0, ui.btn - 1);
+          break;
+        case "RIGHT":
+          ui.btn = Math.min(buttons().length - 1, ui.btn + 1);
+          break;
         case "UP":
-        case "DOWN":
+          ui.zone = "bar";
+          break;
+        case "OK":
+          activate();
           return true;
       }
-      return false;
+      uiRender();
+      return true;
     }
 
     XTV.player = {
@@ -567,6 +1190,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       play: play,
       stop: stop,
       flush: flush,
+      lookupResume: lookupResume,
       handleKey: handleKey,
       isActive: function () {
         return !!session;

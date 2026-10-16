@@ -33,7 +33,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var $grid = null;
     var $header = null;
     var $detailsContainer = null;
-    var $feature = null;
     var lastFocusedEl = null;
     var bgState = { idx: 0, src: null };
     var layout = { itemWidth: 0, baseLeft: 0 };
@@ -101,7 +100,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       $("#mainContent").remove();
       var $main = $(
-        '<div id="mainContent"><div id="xtvHeader"><div class="xd"></div></div><div id="xtvFeature"></div><div id="xtvGrid"></div></div>'
+        '<div id="mainContent"><div id="xtvHeader"><div class="xd"></div></div><div id="xtvGrid"></div></div>'
       );
       if ($("#result").length) {
         $("#result").after($main);
@@ -111,19 +110,10 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       $header = $main.find("#xtvHeader");
       $grid = $main.find("#xtvGrid");
       $detailsContainer = $main.find(".xd");
-      $feature = $main.find("#xtvFeature");
       // Fondo: dos capas para el fundido cruzado y los degradados de lectura
       $("#mainContainer")
         .empty()
         .append('<div class="xb-layer"></div><div class="xb-layer"></div><div class="xb-scrim"></div>');
-      $feature.on("click", ".xf-card", function () {
-        var s = active();
-        if (s && s.feature && XTV.state.layer === "grid") {
-          s.onFeature = true;
-          focusChanged(false);
-          openCurrent();
-        }
-      });
 
       // Puntero: pasar por un póster de la tira con foco lo enfoca sin
       // desplazar la tira (así el contenido no se mueve bajo el puntero).
@@ -139,10 +129,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         if (XTV.state.layer === "menu") {
           XTV.menu.close();
         }
-        if (XTV.state.layer !== "grid" || (s.rows[pos.row].col === pos.col && !s.onFeature)) {
+        if (XTV.state.layer !== "grid" || s.rows[pos.row].col === pos.col) {
           return;
         }
-        s.onFeature = false;
         s.rows[pos.row].col = pos.col;
         focusChanged(true);
       });
@@ -162,7 +151,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           s.rowIndex = pos.row;
           applyOrder(s);
         }
-        s.onFeature = false;
         s.rows[pos.row].col = pos.col;
         focusChanged(true);
         openCurrent();
@@ -663,112 +651,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     /* ======================================================================
-     * Cineclub: carrusel destacado
-     * La película mejor puntuada en IMDb de cada ciclo (tira), sin
-     * repetidas, hasta 5. Avanza solo cada 8 s si el foco no está encima.
-     * ==================================================================== */
-    function rating(v) {
-      var n = parseFloat(String(v === null || v === undefined ? "" : v).replace(",", "."));
-      return isNaN(n) ? -1 : n;
-    }
-
-    function buildFeature(s) {
-      var used = {};
-      var picks = [];
-      for (var r = 0; r < s.rows.length; r++) {
-        var sorted = s.rows[r].items.slice(0).sort(function (a, b) {
-          return rating(b.imdb) - rating(a.imdb);
-        });
-        for (var k = 0; k < sorted.length; k++) {
-          var id = String(sorted[k].movieId);
-          if (!used[id]) {
-            used[id] = true;
-            picks.push({ item: sorted[k], cycle: s.rows[r].title, order: r });
-            break;
-          }
-        }
-      }
-      if (picks.length > C.FEATURE_MAX) {
-        picks.sort(function (a, b) {
-          return rating(b.item.imdb) - rating(a.item.imdb);
-        });
-        picks = picks.slice(0, C.FEATURE_MAX);
-        picks.sort(function (a, b) {
-          return a.order - b.order;
-        });
-      }
-      s.feature = { items: picks, index: 0 };
-      s.onFeature = picks.length > 0;
-    }
-
-    function renderFeature() {
-      var s = active();
-      if (!$feature) {
-        return;
-      }
-      if (!s || !s.feature || !s.feature.items.length) {
-        $feature.html("");
-        return;
-      }
-      var f = s.feature;
-      var cur = f.items[f.index];
-      var next = f.items[(f.index + 1) % f.items.length];
-      var it = cur.item;
-      var big = bigPoster(it.poster);
-      var land = landscapeOf(it.poster);
-      var h = '<div class="xf-head"><div class="xf-h1">Cineclub</div></div>';
-      if (f.items.length > 1) {
-        h += '<div class="xf-peek" style="background-image:' + util.esc(util.cssUrl(bigPoster(next.item.poster))) + '"></div>';
-      }
-      h += '<div class="xf-card' + (s.onFeature && XTV.state.layer === "grid" ? " onFocus" : "") + '">';
-      h += '<div class="xf-bg" style="background-image:' + util.esc(util.cssUrl(big)) + '"></div>';
-      if (land && imgState(land) !== "bad") {
-        h += '<div class="xf-bg wide" data-src="' + util.esc(land) + '"></div>';
-      }
-      h += '<div class="xf-scrim"></div>';
-      h += '<div class="xf-poster"><img alt="" src="' + util.esc(big || it.poster || "") + '"></div>';
-      h += '<div class="xf-info"><div class="xf-eyebrow">Ciclo · ' + util.text(cur.cycle) + "</div>";
-      h += '<div class="xf-title">' + util.text(it.title) + "</div>" + metaHtml(it);
-      h += '<div class="xf-syn">' + util.text(it.sinopsis) + "</div>";
-      h += '<div class="xf-cta"><span class="xm-btn primary">' + XTV.icon("play", "xm-btn-icon") + "<span>Ver detalle</span></span></div></div>";
-      if (f.items.length > 1) {
-        h += '<div class="xf-dots">';
-        for (var i = 0; i < f.items.length; i++) {
-          h += '<span class="' + (i === f.index ? "on" : "") + '"></span>';
-        }
-        h += "</div>";
-      }
-      h += "</div>";
-      $feature.html(h);
-      // La horizontal aparece con un fundido cuando termina de cargar
-      var wide = $feature.find(".xf-bg.wide").get(0);
-      if (wide) {
-        var src = wide.getAttribute("data-src");
-        firstLoadable([{ src: src, wide: true }], function (opt) {
-          if (opt && wide.parentNode) {
-            putImg(wide, src);
-            wide.className = "xf-bg wide ok";
-          }
-        });
-      }
-    }
-
-    setInterval(function () {
-      var s = active();
-      if (
-        s &&
-        s.name === "cineclub" &&
-        s.feature &&
-        s.feature.items.length > 1 &&
-        !s.onFeature &&
-        XTV.state.layer === "grid"
-      ) {
-        s.feature.index = (s.feature.index + 1) % s.feature.items.length;
-        renderFeature();
-      }
-    }, 8000);
-
-    /* ======================================================================
      * Foco
      * ==================================================================== */
     function currentBox() {
@@ -779,10 +661,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     function syncFocusClass() {
       var s = active();
-      var el = s && s.onFeature ? null : currentBox();
-      if ($feature) {
-        $feature.find(".xf-card").toggleClass("onFocus", !!(s && s.onFeature && XTV.state.layer === "grid"));
-      }
+      var el = currentBox();
       if (lastFocusedEl && lastFocusedEl !== el) {
         $(lastFocusedEl).removeClass("onFocus activeContent");
       }
@@ -811,32 +690,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         applyScroll(row, true);
       }
       syncFocusClass();
-      if (s.name === "cineclub") {
-        renderSub(s);
-      } else {
-        renderDetails(s.currentItem());
-        prefetchAround(row);
-      }
+      renderDetails(s.currentItem());
+      prefetchAround(row);
       ensureImages(row);
       if (s.rows.length > 1) {
         ensureImages(s.rows[(s.rowIndex + 1) % s.rows.length]);
-      }
-    }
-
-    // En Cineclub, el título y año del póster con foco junto al nombre del ciclo
-    function renderSub(s) {
-      for (var i = 0; i < s.rows.length; i++) {
-        var row = s.rows[i];
-        var txt = "";
-        if (i === s.rowIndex && !s.onFeature) {
-          var it = row.items[row.col];
-          if (it) {
-            txt = " · " + util.plain(it.title) + (util.isEmpty(it.year) ? "" : " (" + util.plain(it.year) + ")");
-          }
-        }
-        if (row.sub) {
-          row.sub.textContent = txt;
-        }
       }
     }
 
@@ -892,7 +750,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         }
       }
       applyOrder(s);
-      renderFeature();
       focusChanged(false);
     }
 
@@ -1036,7 +893,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             XTV.modal.alert({ message: "No hay películas en Cineclub en este momento." });
             return;
           }
-          buildFeature(s);
           switchTo("cineclub");
         })
         .fail(function (xhr, textStatus) {
@@ -1171,9 +1027,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
      * ==================================================================== */
     function currentItem() {
       var s = active();
-      if (s && s.onFeature && s.feature && s.feature.items.length) {
-        return s.feature.items[s.feature.index].item;
-      }
       return s ? s.currentItem() : null;
     }
 
@@ -1206,47 +1059,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       focusChanged(false);
     }
 
-    // Carrusel de Cineclub: izquierda/derecha cambian de tarjeta
-    function featureKey(s, action) {
-      var f = s.feature;
-      if (action === "LEFT") {
-        if (f.index > 0) {
-          f.index--;
-          renderFeature();
-        } else {
-          XTV.menu.open();
-        }
-        return true;
-      }
-      if (action === "RIGHT") {
-        if (f.index < f.items.length - 1) {
-          f.index++;
-          renderFeature();
-        }
-        return true;
-      }
-      if (action === "DOWN" || action === "UP") {
-        s.onFeature = false;
-        s.rowIndex = action === "DOWN" ? 0 : s.rows.length - 1;
-        applyOrder(s);
-        renderFeature();
-        focusChanged(false);
-        return true;
-      }
-      return false;
-    }
-
     function moveVertical(delta) {
       var s = active();
-      // En Cineclub el carrusel es una fila más del ciclo vertical
-      if (s && s.feature && s.feature.items.length) {
-        if ((delta < 0 && s.rowIndex === 0) || (delta > 0 && s.rowIndex === s.rows.length - 1)) {
-          s.onFeature = true;
-          renderFeature();
-          focusChanged(false);
-          return;
-        }
-      }
       if (!s || s.rows.length < 2) {
         if (s && delta > 0 && !s.complete && !s.loadingFirst && s.name === "home") {
           s.pendingDown = true;
@@ -1268,10 +1082,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     function handleKey(action) {
-      var s = active();
-      if (s && s.onFeature && s.feature && s.feature.items.length && featureKey(s, action)) {
-        return true;
-      }
       switch (action) {
         case "LEFT":
           moveHorizontal(-1);
@@ -1350,25 +1160,33 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       XTV.busy.start("movie", function () {
         XTV.api.abort("movie");
       });
+      // En paralelo: si está en Mi lista y si ya se empezó a ver
+      var resume = XTV.player.lookupResume ? XTV.player.lookupResume(item) : $.Deferred().resolve(null).promise();
+      function show(bookmarked, canBookmark) {
+        resume.done(function (r) {
+          if (gen !== openMovie.gen) {
+            return;
+          }
+          XTV.busy.end("movie");
+          showMovieModal(item, context, bookmarked, canBookmark, r);
+        });
+      }
       XTV.api
         .get(P.checkBookmark, { movieid: item.movieId }, "movie")
         .done(function (res) {
           if (gen !== openMovie.gen) {
             return;
           }
-          XTV.busy.end("movie");
           var data = res && res.data;
-          var bookmarked = !!(data && data[0] && String(data[0].bookmark) === "1");
-          showMovieModal(item, context, bookmarked, true);
+          show(!!(data && data[0] && String(data[0].bookmark) === "1"), true);
         })
         .fail(function (xhr, textStatus) {
           if (XTV.api.isAbort(xhr, textStatus) || gen !== openMovie.gen) {
             return;
           }
-          XTV.busy.end("movie");
           XTV.log.error("checkBookmark", xhr, { movieId: item.movieId });
           // Sin el estado de Mi lista igual se puede ver la película
-          showMovieModal(item, context, false, false);
+          show(false, false);
         });
     }
     openMovie.gen = 0;
@@ -1380,7 +1198,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         .toggleClass("bookmarked", bookmarked);
     }
 
-    function showMovieModal(item, context, bookmarked, canBookmark) {
+    // resume: { seconds } si la película ya se empezó a ver (seconds puede ser 0
+    // si solo se sabe que está en "Lo que ya viste"), o null
+    function showMovieModal(item, context, bookmarked, canBookmark, resume) {
       var changed = false;
       var saving = false;
       var sh = modal.shell("modalConfirmAction", "xm-movie");
@@ -1390,13 +1210,26 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         $poster.append($('<img alt="">').attr("src", poster));
       }
       var $info = $('<div class="xm-info"></div>');
+      if (resume) {
+        var eyebrow = "Continuar viendo";
+        var total = (parseFloat(item.duration) || 0) * 60;
+        if (resume.seconds > 0 && total > resume.seconds) {
+          eyebrow += " · quedan " + Math.max(1, Math.round((total - resume.seconds) / 60)) + " min";
+        }
+        $info.append($('<div class="xm-eyebrow"></div>').text(eyebrow));
+      }
       $info.append($('<div class="xm-title"></div>').text(util.plain(item.title)));
       $info.append(XTV.grid.metaHtml(item));
       $info.append($('<div class="xm-syn"></div>').text(util.plain(item.sinopsis)));
       $info.append(XTV.grid.creditsHtml(item, false));
       var $actions = $('<div class="xm-actions"></div>');
-      var $play = modal.button("Ver ahora", true, "play");
+      var $play = modal.button(resume ? "Seguir viendo" : "Ver ahora", true, "play");
       $actions.append($play);
+      var $start = null;
+      if (resume) {
+        $start = modal.button("Desde el principio", false, "restart");
+        $actions.append($start);
+      }
       var $bookmark = null;
       if (canBookmark) {
         $bookmark = $('<button type="button" class="xm-btn"></button>');
@@ -1448,6 +1281,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           if (el === $play.get(0)) {
             modal.close(true);
             XTV.player.play(item);
+          } else if ($start && el === $start.get(0)) {
+            modal.close(true);
+            XTV.player.play(item, { fromStart: true });
           } else {
             toggleBookmark();
           }

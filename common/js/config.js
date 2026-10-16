@@ -44,7 +44,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     SEARCH_RECENT_MAX: 8,
 
     // Carrusel de Cineclub: cantidad máxima de tarjetas
-    FEATURE_MAX: 5,
 
     // Pósters: cuántos se cargan por delante y por detrás de lo visible
     POSTERS_AHEAD: 4,
@@ -62,6 +61,16 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     PROGRESS_DONE_RATIO: 0.95,
     SEEK_SHORT_SECONDS: 10,
     SEEK_LONG_SECONDS: 30,
+    // Adelantar/atrasar: el paso crece según cuánto hace que se mantiene
+    // apretado ([milisegundos desde que empezó, segundos por paso])
+    SEEK_ACCEL: [[0, 10], [1000, 30], [2500, 60], [5000, 120]],
+    SEEK_COMMIT_MS: 700, // salto real después de esta pausa sin teclas
+    SEEK_CHAIN_MS: 600, // teclas más espaciadas que esto reinician la aceleración
+    PLAYER_UI_HIDE_MS: 5000, // la barra se oculta sola si no se toca nada
+    RESUME_MIN_SECONDS: 30, // menos que esto no cuenta como "Seguir viendo"
+    // Una película que figura en "Lo que ya viste" cuenta como empezada aunque
+    // la respuesta no traiga el tiempo
+    RESUME_FROM_HISTORY_LIST: true,
 
     // Peticiones
     REQUEST_TIMEOUT_MS: 20000,
@@ -739,7 +748,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
       backspace: '<path d="M9 5h11v14H9l-6-7zM12.5 9.5l5 5M17.5 9.5l-5 5"/>',
       space: '<path d="M3 10v5h18v-5"/>',
-      play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>'
+      play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>',
+      pause: '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/>',
+      restart: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/>',
+      cc: '<path d="M3 6h18v12H3zM10.5 10.2a2.3 2.3 0 1 0 0 3.6M17 10.2a2.3 2.3 0 1 0 0 3.6"/>',
+      cast: '<path d="M3 8V6h18v12h-6M3 12a6 6 0 0 1 6 6M3 15.5a2.5 2.5 0 0 1 2.5 2.5M3 18h.01"/>'
     };
 
     XTV.icon = function (name, cls) {

@@ -45,6 +45,43 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
 
+## v2.4: reproductor, ficha, Cineclub y marca
+
+Cambian `common/js/config.js`, `common/js/JCPlayer.js`, `common/js/xiclos.js` y `common/css/custom.css`.
+
+### Reproductor: barra propia
+
+- Aparece con cualquier tecla y se oculta sola a los 5 s si el video está andando (pausado se queda). Muestra el título, la barra de progreso con el tiempo y los botones: **Pausa/Reproducir**, **Desde el inicio**, **Subtítulos** (si la película tiene) y **Transmitir** (solo donde el reproductor lo ofrece; en las TVs no aparece).
+- Los controles propios del reproductor quedan ocultos; los subtítulos se siguen viendo y suben un poco cuando la barra está visible.
+- **Teclas:**
+  - Barra oculta: izquierda/derecha empiezan a adelantar/atrasar; OK, arriba o abajo solo muestran la barra; Volver sale del video.
+  - En la barra de progreso: izquierda/derecha adelantan/atrasan; OK confirma el salto (o pausa); abajo baja a los botones; Volver oculta la barra (o cancela el salto que se estaba eligiendo).
+  - En los botones: izquierda/derecha eligen, OK acciona, arriba vuelve a la barra.
+  - En cualquier momento: Play, Pausa, Play/Pausa, adelantar/retroceder (pasos de 30 s o más), azul (siguiente subtítulo, incluye "Desactivados") y Stop (salir).
+- **Adelantar y atrasar:**
+  - Mientras se aprieta se mueve solo el indicador, con el tiempo de destino y la diferencia (por ejemplo "32:10 (+2:30)"). El salto real se hace una sola vez, 0,7 s después de soltar.
+  - Si se mantiene apretado, el paso crece: 10 s el primer segundo, 30 s hasta los 2,5 s, 60 s hasta los 5 s y después 2 min. Toques sueltos siempre son de 10 s.
+  - Los valores están en `XTV.config` (`SEEK_ACCEL`, `SEEK_COMMIT_MS`).
+- **Subtítulos:** menú con los idiomas de la película y "Desactivados". La elección se recuerda en la TV para las próximas películas.
+- **Desde el inicio:** vuelve a 0 y desde ahí se guarda el progreso.
+- Con el Magic Remote, mover el puntero muestra la barra y los botones se pueden cliquear (también la barra de progreso).
+
+### Ficha: "Seguir viendo"
+
+- Si la película ya se empezó a ver: rótulo "Continuar viendo · quedan N min", botón principal **Seguir viendo** y al lado **Desde el principio**. Si no, queda como antes ("Ver ahora").
+- Cómo se sabe que está empezada:
+  - lo guardado desde esta TV (se recuerda en la TV cada vez que se guarda el progreso, y se borra al terminarla);
+  - "Lo que ya viste" (`userHistory`), consultado al abrir la ficha (una vez por minuto como máximo), para lo visto en otros equipos. Si la respuesta trae el tiempo (`resumePoint`, `time`, `progress`…), se usa. Si no lo trae, figurar en la lista alcanza para mostrar los botones (se puede apagar con `RESUME_FROM_HISTORY_LIST` en `XTV.config`).
+- **A verificar:** qué campos trae realmente `userHistory`, y que una película terminada salga de esa lista. Si no sale, conviene apagar `RESUME_FROM_HISTORY_LIST`.
+
+### Cineclub sin carrusel destacado
+
+- Mismo modelo que la Home: detalle y fondo de la película con foco arriba, y las tiras de los ciclos abajo.
+
+### Marca
+
+- Triángulo de 14,1vw y logo de 4,8vw de alto, a 3,3vw del borde superior y 2,8vw del derecho (×1,5 de la versión anterior), en el rojo institucional.
+
 ## v2.2: ajustes
 
 Cambian `common/js/config.js`, `common/js/xiclos.js`, `common/js/JCPlayer.js`, `common/js/arrows.js` y `common/css/custom.css`.
