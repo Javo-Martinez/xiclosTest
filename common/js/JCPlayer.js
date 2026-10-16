@@ -98,6 +98,10 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ----------------------------------------------------------------------
      * Historial / progreso
      * -------------------------------------------------------------------- */
+    var lastSave = null;
+    var RESUME_TOLERANCE = 15; // segundos de margen para dar por bueno el salto
+    var RESUME_RETRIES = 3;
+
     function saveProgress(s, seconds) {
       if (!s || s.done || !s.tracking) {
         return;
@@ -107,7 +111,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return;
       }
       s.lastSaved = seconds;
-      XTV.api
+      lastSave = XTV.api
         .request({
           method: "PUT",
           url: P.updateHistory,
@@ -119,6 +123,25 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             XTV.log.error("updHistory", xhr, { movieId: s.item.movieId });
           }
         });
+      return lastSave;
+    }
+
+    // Promesa que se resuelve cuando termina el último guardado (bien o mal),
+    // con un máximo de 3 s para no trabar la reproducción.
+    function afterLastSave() {
+      var d = $.Deferred();
+      var xhr = lastSave;
+      if (!xhr || xhr.state() !== "pending") {
+        return d.resolve().promise();
+      }
+      var t = setTimeout(function () {
+        d.resolve();
+      }, 3000);
+      xhr.always(function () {
+        clearTimeout(t);
+        d.resolve();
+      });
+      return d.promise();
     }
 
     function markDone(s) {
@@ -165,6 +188,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         player: null,
         loading: true,
         resumePoint: 0,
+        resumeTries: 0,
         progressId: null,
         lastSaved: 0,
         tracking: false,
@@ -181,7 +205,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return session === s && s.gen === gen;
       }
 
-      var history = XTV.api.get(P.setHistory, { movieId: item.movieId, resumePoint: 0 }, "player");
+      // Si se vuelve a abrir enseguida, primero se espera el último guardado:
+      // si no, el historial podría devolver la posición anterior.
+      var history = afterLastSave().then(function () {
+        return XTV.api.get(P.setHistory, { movieId: item.movieId, resumePoint: 0 }, "player");
+      });
 
       $.when(loadLibrary(), history)
         .done(function (libArgs, historyArgs) {
@@ -250,23 +278,26 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return;
         }
         if (s.resumePoint > 5) {
-          var doSeek = function () {
-            if (session === s) {
-              player.seek(s.resumePoint);
-            }
-          };
-          if (isLG) {
-            setTimeout(doSeek, 500);
-          } else {
-            doSeek();
-          }
+          resumeSeek(s, isLG ? 500 : 0);
         } else {
           s.tracking = true;
         }
       });
 
+      // Un salto solo habilita el guardado si llegó a destino (o si lo pidió
+      // el usuario). Si no, un salto fallido que deja el video en 0 pisaría
+      // la posición guardada.
       player.on("seeked", function () {
-        s.tracking = true;
+        if (session !== s || s.tracking) {
+          return;
+        }
+        var pos = 0;
+        try {
+          pos = player.getPosition() || 0;
+        } catch (e) {}
+        if (pos >= s.resumePoint - RESUME_TOLERANCE) {
+          s.tracking = true;
+        }
       });
 
       player.on("time", function (e) {
@@ -332,6 +363,75 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       player.on("error", onError);
     }
 
+    // Salta a la posición guardada y verifica 2 s después que haya llegado.
+    // Algunos televisores ignoran el primer salto si el video todavía está
+    // cargando: se reintenta hasta RESUME_RETRIES veces.
+    function resumeSeek(s, delay) {
+      setTimeout(function () {
+        if (session !== s || s.tracking) {
+          return;
+        }
+        s.resumeTries++;
+        try {
+          s.player.seek(s.resumePoint);
+        } catch (e) {}
+        setTimeout(function () {
+          if (session !== s || s.tracking) {
+            return;
+          }
+          var pos = 0;
+          try {
+            pos = s.player.getPosition() || 0;
+          } catch (e) {}
+          if (pos >= s.resumePoint - RESUME_TOLERANCE) {
+            s.tracking = true;
+          } else if (s.resumeTries < RESUME_RETRIES) {
+            resumeSeek(s, 0);
+          } else {
+            // No hubo caso: se sigue desde donde está y se guarda desde ahí
+            XTV.log.error("player-resume", null, {
+              movieId: s.item.movieId,
+              resumePoint: s.resumePoint,
+              position: pos
+            });
+            s.tracking = true;
+          }
+        }, 2000);
+      }, delay);
+    }
+
+    // Guarda la posición actual sin salir del video (al ocultarse la app,
+    // al salir con EXIT, etc.).
+    function flush() {
+      var s = session;
+      if (!s || !s.player || s.done || !s.tracking) {
+        return null;
+      }
+      var pos = 0;
+      try {
+        pos = s.player.getPosition();
+      } catch (e) {}
+      var dur = durationOf(s);
+      if (dur > 0 && pos > dur * C.PROGRESS_DONE_RATIO) {
+        markDone(s);
+        return null;
+      }
+      if (Math.abs(pos - s.lastSaved) >= 2) {
+        return saveProgress(s, pos);
+      }
+      return null;
+    }
+
+    function onHidden() {
+      var hidden = document.hidden || document.webkitHidden;
+      if (hidden) {
+        flush();
+      }
+    }
+    document.addEventListener("visibilitychange", onHidden);
+    document.addEventListener("webkitvisibilitychange", onHidden);
+    window.addEventListener("pagehide", flush);
+
     function fail(s, where, xhr, err) {
       XTV.log.error("player-" + where, xhr, {
         movieId: s.item.movieId,
@@ -386,6 +486,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           target = Math.min(target, dur - 1);
         }
         s.player.seek(target);
+        s.tracking = true;
       } catch (e) {}
     }
 
@@ -465,6 +566,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       preload: loadLibrary,
       play: play,
       stop: stop,
+      flush: flush,
       handleKey: handleKey,
       isActive: function () {
         return !!session;

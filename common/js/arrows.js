@@ -21,12 +21,25 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     function dispatch(action, event) {
       // Teclas globales
-      if (action === "EXIT") {
-        XTV.platform.exit();
-        return true;
-      }
-      if (action === "INFO") {
-        window.location.reload();
+      if (action === "EXIT" || action === "INFO") {
+        // Si hay un video, primero se guarda la posición
+        var pending = XTV.player && XTV.player.flush ? XTV.player.flush() : null;
+        var go = function () {
+          if (action === "EXIT") {
+            XTV.platform.exit();
+          } else {
+            window.location.reload();
+          }
+        };
+        if (pending && pending.always) {
+          var t = setTimeout(go, 1500);
+          pending.always(function () {
+            clearTimeout(t);
+            go();
+          });
+        } else {
+          go();
+        }
         return true;
       }
 

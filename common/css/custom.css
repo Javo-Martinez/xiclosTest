@@ -2150,6 +2150,19 @@ body.xtv .xb-layer {
   -webkit-transition: opacity 0.3s ease;
   transition: opacity 0.3s ease;
 }
+/* Imagen horizontal (la del sitio web): ocupa el ancho sin recortar caras */
+body.xtv .xb-layer.wide {
+  background-position: center center;
+}
+body.xtv .xf-bg.wide {
+  background-position: center center;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease;
+}
+body.xtv .xf-bg.wide.ok {
+  opacity: 1;
+}
 body.xtv .xb-scrim {
   position: absolute;
   top: 0;
@@ -2222,7 +2235,7 @@ body.xtv .xd-meta span {
 }
 body.xtv .xd-age {
   border: 0.078vw solid #6B6B73;
-  border-radius: 0.3vw;
+  border-radius: 0.2vw;
   padding: 0.08vw 0.47vw;
   font-size: 0.94vw;
   color: #D4D4D8;
@@ -2260,9 +2273,12 @@ body.xtv .xd-lbl {
 /* ---------------------------------------------------------------
  * Tiras y afiches
  * --------------------------------------------------------------- */
+/* El borde izquierdo del recorte queda 0.8vw antes del primer afiche: así
+ * el afiche con foco (escala 1.06) no se corta. */
 body.xtv #xtvGrid {
   position: absolute;
-  left: 9.375vw;
+  left: 8.575vw;
+  padding-left: 0.8vw;
   top: 31.5625vw;
   right: 0;
   bottom: 0;
@@ -2319,7 +2335,7 @@ body.xtv .xr-poster {
   position: relative;
   width: 100%;
   height: 15.47vw;
-  border-radius: 0.47vw;
+  border-radius: 0.25vw;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
 }
@@ -2349,7 +2365,7 @@ body.xtv .xs-movie .ph:after {
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 0.47vw;
+  border-radius: 0.25vw;
   box-shadow: inset 0 0 0 0.234vw transparent;
 }
 body.xtv .xr-item.onFocus {
@@ -2392,7 +2408,7 @@ body.xtv .xf-peek {
   top: 9.0625vw;
   width: 23.4vw;
   height: 23.4375vw;
-  border-radius: 1.25vw;
+  border-radius: 0.25vw;
   background-size: cover;
   background-position: center 30%;
   opacity: 0.35;
@@ -2403,7 +2419,7 @@ body.xtv .xf-card {
   top: 9.0625vw;
   width: 78.125vw;
   height: 23.4375vw;
-  border-radius: 1.25vw;
+  border-radius: 0.25vw;
   overflow: hidden;
   background: #18181B;
   box-shadow: 0 0 0 0.078vw rgba(255, 255, 255, 0.06);
@@ -2437,7 +2453,7 @@ body.xtv .xf-poster {
   top: 2.34vw;
   width: 12.5vw;
   height: 18.75vw;
-  border-radius: 0.625vw;
+  border-radius: 0.25vw;
   overflow: hidden;
   background: #232328;
 }
@@ -2517,7 +2533,7 @@ body.xtv .xm-btn {
   padding: 0 1.75vw;
   margin-right: 0.94vw;
   border: 0.078vw solid #3A3A42;
-  border-radius: 999px;
+  border-radius: 0.25vw;
   background: transparent;
   color: #D4D4D8;
   font-family: Roboto, Arial, sans-serif;
@@ -2571,7 +2587,7 @@ body.xtv .xm-overlay {
 body.xtv .xm-card {
   box-sizing: border-box;
   padding: 2.5vw;
-  border-radius: 1.25vw;
+  border-radius: 0.25vw;
   background: #18181B;
   border: 0.078vw solid #2E2E34;
   color: #F4F4F5;
@@ -2609,7 +2625,7 @@ body.xtv .xm-poster {
   width: 18.44vw;
   height: 27.66vw;
   margin-right: 2.8vw;
-  border-radius: 0.625vw;
+  border-radius: 0.25vw;
   overflow: hidden;
   background: #232328;
 }
@@ -2741,7 +2757,7 @@ body.xtv .xn-item {
   padding: 0 0 0 0.9375vw;
   box-sizing: border-box;
   border: 0;
-  border-radius: 0.78vw;
+  border-radius: 0.25vw;
   background: transparent;
   color: #8A8A93;
   text-align: left;
@@ -2911,7 +2927,7 @@ body.xtv .xbw-genre {
   margin: 0 1.25vw 1.25vw 0;
   padding: 0 1.5625vw 1.4vw;
   border: 0;
-  border-radius: 0.9375vw;
+  border-radius: 0.25vw;
   background: #18181B;
   color: #D4D4D8;
   text-align: left;
@@ -2962,7 +2978,7 @@ body.xtv .xbw-movie {
 body.xtv .xbw-ph {
   position: relative;
   padding-top: 150%;
-  border-radius: 0.47vw;
+  border-radius: 0.25vw;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
 }
@@ -3066,7 +3082,7 @@ body.xtv #xtvSearch .xs-key {
   height: 3.75vw;
   line-height: 3.75vw;
   margin: 0 0.625vw 0.625vw 0;
-  border-radius: 0.625vw;
+  border-radius: 0.25vw;
   background: #222227;
   color: #D4D4D8;
   text-align: center;
@@ -3156,7 +3172,7 @@ body.xtv #xtvSearch .xs-person {
   height: 3.44vw;
   padding: 0 1.25vw 0 0.47vw;
   margin: 0 0.78vw 0.78vw 0;
-  border-radius: 1.72vw;
+  border-radius: 0.25vw;
   background: #1C1C20;
   color: #E4E4E7;
   font-size: 1.17vw;
@@ -3213,7 +3229,7 @@ body.xtv #xtvSearch .xs-movie .ph {
   position: relative;
   width: 100%;
   padding-top: 150%;
-  border-radius: 0.47vw;
+  border-radius: 0.25vw;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
 }
@@ -3241,7 +3257,7 @@ body.xtv #xtvSearch .xs-movie.onFocus .t {
 body.xtv #xtvSearch .xs-recent {
   padding: 0.7vw 1vw;
   margin-bottom: 0.3vw;
-  border-radius: 0.625vw;
+  border-radius: 0.25vw;
   font-size: 1.33vw;
   color: #D4D4D8;
   cursor: pointer;

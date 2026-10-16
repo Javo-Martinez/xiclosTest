@@ -45,6 +45,24 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
 
+## v2.2: ajustes
+
+Cambian `common/js/xiclos.js`, `common/js/JCPlayer.js`, `common/js/arrows.js` y `common/css/custom.css`.
+
+- **Primer afiche cortado:** el borde del recorte de las tiras quedaba justo en el afiche con foco y la escala lo cortaba. Ahora hay 0,8 vw de margen.
+- **Bordes:** 0,25 vw en afiches, carrusel, ficha, botones, teclado, Personas y Explorar. Los círculos (iniciales) y los puntos del carrusel no cambian.
+- **Fondo en alta calidad:** el afiche llega como miniatura (`movies/<id>/slider-2_150x260.jpg`) y estirada se veía pixelada. Para el fondo se prueba, en orden:
+  1. la horizontal del sitio web (`movies_landscape/<id>/slider-1.jpg`);
+  2. el afiche original sin achicar (`movies/<id>/slider-2.jpg`);
+  3. la miniatura.
+  Si una no existe se pasa a la siguiente, y se recuerda para no volver a pedirla. El carrusel de Cineclub y la ficha usan lo mismo.
+- **Retomar la película:**
+  - El salto a la posición guardada se verifica 2 s después y se reintenta hasta 3 veces (algunas TVs ignoran el primero).
+  - Mientras el salto no llegue, no se guarda nada: un salto fallido ya no pisa la posición con 0.
+  - Si después de 3 intentos no llega, se sigue desde donde está y queda registrado en el log (`player-resume`).
+  - Se guarda también al ocultarse la app (botón Home o cambio de app) y antes de salir con EXIT.
+  - Si se vuelve a abrir la misma película enseguida, se espera a que termine el último guardado antes de pedir la posición.
+
 ## v2.1: diseño y navegación de la búsqueda
 
 Archivos que cambian respecto de la v2: `common/js/config.js`, `utils.js`, `search.js`, `xiclos.js`, `arrows.js`, `JCPlayer.js` y `common/css/custom.css`. El resto queda igual.

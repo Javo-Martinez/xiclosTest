@@ -366,34 +366,105 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Detalle y fondo
      * ==================================================================== */
+    // Imágenes de Firebase Storage. El afiche llega como miniatura
+    // (movies/<id>/slider-2_150x260.jpg); al lado están el original
+    // (movies/<id>/slider-2.jpg) y la horizontal que usa el sitio web
+    // (movies_landscape/<id>/slider-1.jpg).
+    var FB_IMG = /^(https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^\/]+\/o\/)movies%2F([^%?\/]+)%2F([^?]+)/i;
+
     function bigPoster(url) {
-      return String(url || "").replace("-205x347", "");
+      url = String(url || "");
+      var m = url.match(FB_IMG);
+      if (m) {
+        var file = m[3].replace(/_\d+x\d+(\.[a-z]+)$/i, "$1");
+        if (file !== m[3]) {
+          // El token de la miniatura no sirve para el original: la lectura es pública
+          return m[1] + "movies%2F" + m[2] + "%2F" + file + "?alt=media";
+        }
+        return url;
+      }
+      return url.replace("-205x347", "");
+    }
+
+    function landscapeOf(url) {
+      var m = String(url || "").match(FB_IMG);
+      return m ? m[1] + "movies_landscape%2F" + m[2] + "%2Fslider-1.jpg?alt=media" : "";
+    }
+
+    // Imágenes a probar para el fondo, de mejor a peor
+    function backgroundsOf(item) {
+      var list = [];
+      var add = function (u, wide) {
+        if (u) {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].src === u) {
+              return;
+            }
+          }
+          list.push({ src: u, wide: wide });
+        }
+      };
+      if (item && item.poster) {
+        add(landscapeOf(item.poster), true);
+        add(bigPoster(item.poster), false);
+        add(item.poster, false);
+      }
+      return list;
+    }
+
+    // Recuerda qué imágenes no existen para no volver a pedirlas
+    var badImg = {};
+
+    // Carga la primera imagen de la lista que exista y llama a done(opción)
+    function firstLoadable(list, done) {
+      var i = 0;
+      (function next() {
+        while (i < list.length && badImg[list[i].src]) {
+          i++;
+        }
+        if (i >= list.length) {
+          done(null);
+          return;
+        }
+        var opt = list[i];
+        var img = new Image();
+        img.onload = function () {
+          done(opt);
+        };
+        img.onerror = function () {
+          badImg[opt.src] = true;
+          i++;
+          next();
+        };
+        img.src = opt.src;
+      })();
     }
 
     // Fondo con fundido cruzado entre dos capas (solo opacity, sin blur)
-    var setBackground = util.debounce(function (poster) {
+    var setBackground = util.debounce(function (item) {
       var layers = $("#mainContainer .xb-layer").get();
-      if (layers.length < 2 || poster === bgState.src) {
+      var key = item ? item.poster || "" : "";
+      if (layers.length < 2 || key === bgState.src) {
         return;
       }
-      bgState.src = poster;
+      bgState.src = key;
       var cur = layers[bgState.idx];
-      if (!poster) {
+      var list = backgroundsOf(item);
+      if (!list.length) {
         cur.style.opacity = "0";
         return;
       }
-      var img = new Image();
-      img.onload = function () {
-        if (bgState.src !== poster) {
+      firstLoadable(list, function (opt) {
+        if (bgState.src !== key || !opt) {
           return;
         }
         var next = layers[1 - bgState.idx];
-        next.style.backgroundImage = util.cssUrl(poster);
+        next.style.backgroundImage = util.cssUrl(opt.src);
+        next.className = "xb-layer" + (opt.wide ? " wide" : "");
         next.style.opacity = "1";
         layers[bgState.idx].style.opacity = "0";
         bgState.idx = 1 - bgState.idx;
-      };
-      img.src = poster;
+      });
     }, C.BACKGROUND_DELAY_MS);
 
     function metaHtml(item) {
@@ -448,7 +519,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       $detailsContainer.removeClass("in");
       void el.offsetWidth;
       $detailsContainer.addClass("in");
-      setBackground(bigPoster(item.poster));
+      setBackground(item);
     }
 
     /* ======================================================================
@@ -504,13 +575,18 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       var next = f.items[(f.index + 1) % f.items.length];
       var it = cur.item;
       var big = bigPoster(it.poster);
+      var land = landscapeOf(it.poster);
       var h = '<div class="xf-head"><div class="xf-h1">Cineclub</div></div>';
       if (f.items.length > 1) {
         h += '<div class="xf-peek" style="background-image:' + util.esc(util.cssUrl(bigPoster(next.item.poster))) + '"></div>';
       }
       h += '<div class="xf-card' + (s.onFeature && XTV.state.layer === "grid" ? " onFocus" : "") + '">';
-      h += '<div class="xf-bg" style="background-image:' + util.esc(util.cssUrl(big)) + '"></div><div class="xf-scrim"></div>';
-      h += '<div class="xf-poster"><img alt="" src="' + util.esc(it.poster || "") + '"></div>';
+      h += '<div class="xf-bg" style="background-image:' + util.esc(util.cssUrl(big)) + '"></div>';
+      if (land && !badImg[land]) {
+        h += '<div class="xf-bg wide" data-src="' + util.esc(land) + '"></div>';
+      }
+      h += '<div class="xf-scrim"></div>';
+      h += '<div class="xf-poster"><img alt="" src="' + util.esc(big || it.poster || "") + '"></div>';
       h += '<div class="xf-info"><div class="xf-eyebrow">Ciclo · ' + util.text(cur.cycle) + "</div>";
       h += '<div class="xf-title">' + util.text(it.title) + "</div>" + metaHtml(it);
       h += '<div class="xf-syn">' + util.text(it.sinopsis) + "</div>";
@@ -524,6 +600,17 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       h += "</div>";
       $feature.html(h);
+      // La horizontal aparece con un fundido cuando termina de cargar
+      var wide = $feature.find(".xf-bg.wide").get(0);
+      if (wide) {
+        var src = wide.getAttribute("data-src");
+        firstLoadable([{ src: src, wide: true }], function (opt) {
+          if (opt && wide.parentNode) {
+            wide.style.backgroundImage = util.cssUrl(src);
+            wide.className = "xf-bg wide ok";
+          }
+        });
+      }
     }
 
     setInterval(function () {
