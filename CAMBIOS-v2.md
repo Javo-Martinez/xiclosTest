@@ -60,6 +60,7 @@ Cambian `common/js/config.js`, `common/js/xiclos.js`, `common/js/JCPlayer.js`, `
   - Mientras el foco está quieto se precargan, de a una, las imágenes de los afiches vecinos (2 a la derecha, 1 a la izquierda y 1 más a la derecha). Al moverse, el fondo ya está y cambia en ~120 ms.
   - Si la imagen todavía no llegó, el fondo anterior se apaga enseguida (no queda el de otra película) y la nueva aparece apenas termina de bajar.
   - Se guardan en memoria las últimas 24 imágenes cargadas y se muestran tal cual, sin volver a descargarlas.
+- **Marca:** el triángulo de la esquina crece a 9,4 vw y el logo se apoya sobre la diagonal, mitad sobre el rojo y mitad sobre la imagen (variante D de la guía). El logo lleva una sombra suave para leerse sobre fondos claros.
 - **Final de las tiras:** la tira se frena alineada a un afiche, así el primero que se ve a la izquierda tampoco queda cortado.
 - **Retomar la película:**
   - El salto a la posición guardada se verifica 2 s después y se reintenta hasta 3 veces (algunas TVs ignoran el primero).

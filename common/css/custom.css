@@ -2085,7 +2085,7 @@ body.xtv {
 }
 
 /* ---------------------------------------------------------------
- * Marca: acento en esquina (variante C)
+ * Marca: triángulo en esquina con el logo pisando la diagonal (variante D)
  * --------------------------------------------------------------- */
 body.xtv .trapezium,
 body.xtv .trapezium2 {
@@ -2099,8 +2099,8 @@ body.xtv .triangle {
   left: auto !important;
   width: 0 !important;
   height: 0 !important;
-  border-top: 5vw solid #EB564A !important;
-  border-left: 5vw solid transparent !important;
+  border-top: 9.4vw solid #EB564A !important;
+  border-left: 9.4vw solid transparent !important;
   border-right: 0 !important;
   border-bottom: 0 !important;
   z-index: 45;
@@ -2108,8 +2108,8 @@ body.xtv .triangle {
 body.xtv #result {
   display: block !important;
   position: absolute !important;
-  top: 1.6vw !important;
-  right: 6.6vw !important;
+  top: 2.2vw !important;
+  right: 1.9vw !important;
   left: auto !important;
   margin: 0 !important;
   z-index: 45;
@@ -2118,6 +2118,9 @@ body.xtv #result img {
   display: block !important;
   height: 3.2vw !important;
   width: auto !important;
+  /* Sombra suave para que la parte que cae sobre la imagen se lea igual */
+  -webkit-filter: drop-shadow(0 0.08vw 0.16vw rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 0.08vw 0.16vw rgba(0, 0, 0, 0.45));
 }
 
 /* ---------------------------------------------------------------
