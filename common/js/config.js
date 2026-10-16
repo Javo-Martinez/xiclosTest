@@ -43,12 +43,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     SEARCH_MAX_PEOPLE: 8,
     SEARCH_RECENT_MAX: 8,
 
-<<<<<<< HEAD
-=======
     // Carrusel de Cineclub: cantidad máxima de tarjetas
     FEATURE_MAX: 5,
 
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     // Pósters: cuántos se cargan por delante y por detrás de lo visible
     POSTERS_AHEAD: 4,
     POSTERS_BEHIND: 2,
@@ -672,11 +669,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     XTV.refocus = function () {
       if (XTV.state.layer === "search" && XTV.search && XTV.search.refocus) {
         XTV.search.refocus();
-<<<<<<< HEAD
-=======
       } else if (XTV.state.layer === "browse" && XTV.browse && XTV.browse.refocus) {
         XTV.browse.refocus();
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       } else if (XTV.grid && XTV.grid.refocus) {
         XTV.grid.refocus();
       }
@@ -731,8 +725,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     };
 
     /* ======================================================================
-<<<<<<< HEAD
-=======
      * Íconos (SVG de trazo, heredan el color del texto)
      * ==================================================================== */
     var ICONS = {
@@ -761,7 +753,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     };
 
     /* ======================================================================
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
      * Navegación geométrica entre elementos (modales, menús)
      * Elige el elemento más cercano en la dirección pedida según su
      * posición en pantalla, así no depende del orden del DOM.

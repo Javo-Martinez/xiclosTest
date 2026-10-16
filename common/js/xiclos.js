@@ -33,13 +33,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var $grid = null;
     var $header = null;
     var $detailsContainer = null;
-<<<<<<< HEAD
-    var lastFocusedEl = null;
-=======
     var $feature = null;
     var lastFocusedEl = null;
     var bgState = { idx: 0, src: null };
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     var layout = { itemWidth: 0, baseLeft: 0 };
 
     /* ======================================================================
@@ -104,29 +100,14 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return;
       }
       $("#mainContent").remove();
-<<<<<<< HEAD
-      var $main = $('<div id="mainContent"><div id="header"></div><div id="grid"></div></div>');
-=======
       var $main = $(
         '<div id="mainContent"><div id="xtvHeader"><div class="xd"></div></div><div id="xtvFeature"></div><div id="xtvGrid"></div></div>'
       );
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       if ($("#result").length) {
         $("#result").after($main);
       } else {
         $("body").append($main);
       }
-<<<<<<< HEAD
-      $header = $main.find("#header");
-      $grid = $main.find("#grid");
-      var $details = $('<div class="prodDetails" style="display:block"><div class="detailsContainer"></div></div>');
-      $header.append($details);
-      $detailsContainer = $details.find(".detailsContainer");
-
-      // Puntero: pasar por un póster de la tira con foco lo enfoca sin
-      // desplazar la tira (así el contenido no se mueve bajo el puntero).
-      $grid.on("mousemove", ".box", function () {
-=======
       $header = $main.find("#xtvHeader");
       $grid = $main.find("#xtvGrid");
       $detailsContainer = $main.find(".xd");
@@ -147,7 +128,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       // Puntero: pasar por un póster de la tira con foco lo enfoca sin
       // desplazar la tira (así el contenido no se mueve bajo el puntero).
       $grid.on("mousemove", ".xr-item", function () {
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         if (!XTV.pointer.isActive()) {
           return;
         }
@@ -159,15 +139,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         if (XTV.state.layer === "menu") {
           XTV.menu.close();
         }
-<<<<<<< HEAD
-        if (XTV.state.layer !== "grid" || s.rows[pos.row].col === pos.col) {
-          return;
-        }
-        s.rows[pos.row].col = pos.col;
-        focusChanged(true);
-      });
-      $grid.on("click", ".box", function () {
-=======
         if (XTV.state.layer !== "grid" || (s.rows[pos.row].col === pos.col && !s.onFeature)) {
           return;
         }
@@ -176,7 +147,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         focusChanged(true);
       });
       $grid.on("click", ".xr-item", function () {
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         var pos = positionOf(this);
         var s = active();
         if (!pos || !s) {
@@ -192,10 +162,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           s.rowIndex = pos.row;
           applyOrder(s);
         }
-<<<<<<< HEAD
-=======
         s.onFeature = false;
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         s.rows[pos.row].col = pos.col;
         focusChanged(true);
         openCurrent();
@@ -215,11 +182,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     function positionOf(boxEl) {
       var $box = $(boxEl);
-<<<<<<< HEAD
-      var $row = $box.closest(".gridContent");
-=======
       var $row = $box.closest(".xr-row");
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       if (!$row.length) {
         return null;
       }
@@ -234,42 +197,17 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
      * ==================================================================== */
     function boxHtml(items, j) {
       var n = items.length;
-<<<<<<< HEAD
-      var cls = "box";
-=======
       var cls = "xr-item";
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       if (j === 0) {
         cls += " firstElement";
       } else if (j === n - 1) {
         cls += " lastElement";
       }
-<<<<<<< HEAD
-      return (
-        '<div class="' +
-        cls +
-        '" data-col="' +
-        j +
-        '"><img class="poster" alt=""><div class="posterTitle">' +
-        util.text(items[j].title) +
-        "</div></div>"
-      );
-=======
       return '<div class="' + cls + '" data-col="' + j + '"><div class="xr-poster"><img alt=""></div></div>';
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     }
 
     function buildRow(row, index) {
       var html =
-<<<<<<< HEAD
-        '<div class="gridContent" data-row="' +
-        index +
-        '"><div class="verticalRectangle"></div><div class="stripTitle">' +
-        (row.titleHtml || util.text(row.title)) +
-        '</div><div class="content"></div></div>';
-      row.el = $(html).get(0);
-      row.content = $(row.el).find(".content").get(0);
-=======
         '<div class="xr-row" data-row="' +
         index +
         '"><div class="xr-title"><span class="xr-name">' +
@@ -278,7 +216,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       row.el = $(html).get(0);
       row.content = $(row.el).find(".xr-track").get(0);
       row.sub = $(row.el).find(".xr-sub").get(0);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       row.boxes = row.content.children;
       row.imgs = row.content.getElementsByTagName("img");
       row.loaded = {};
@@ -334,20 +271,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     function itemWidth() {
       if (!layout.itemWidth) {
-<<<<<<< HEAD
-        var box = $grid ? $grid.find(".box:visible").get(0) : null;
-=======
         var box = $grid ? $grid.find(".xr-item:visible").get(0) : null;
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         if (box) {
           layout.itemWidth = $(box).outerWidth(true) || 0;
           // Posición izquierda de la tira sin desplazamiento. offsetLeft no
           // incluye el transform, así que sirve aunque la tira esté corrida.
-<<<<<<< HEAD
-          var el = $(box).closest(".content").get(0);
-=======
           var el = $(box).closest(".xr-track").get(0);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
           var left = 0;
           while (el) {
             left += el.offsetLeft || 0;
@@ -407,14 +336,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
     }
 
-<<<<<<< HEAD
-=======
     // Fundido al cargar el póster
     function imgLoaded() {
       this.className = "ok";
     }
 
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     function ensureImages(row) {
       if (!row) {
         return;
@@ -430,10 +356,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           row.loaded[j] = true;
           var src = row.items[j].poster;
           if (src) {
-<<<<<<< HEAD
-=======
             row.imgs[j].onload = imgLoaded;
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
             row.imgs[j].src = src;
           }
         }
@@ -443,17 +366,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Detalle y fondo
      * ==================================================================== */
-<<<<<<< HEAD
-    var setBackground = util.debounce(function (poster) {
-      $("#mainContainer").css({
-        "background-image": poster ? util.cssUrl(poster) : "none",
-        "background-repeat": "no-repeat",
-        "background-position": "0px 25%",
-        "background-size": "cover"
-      });
-    }, C.BACKGROUND_DELAY_MS);
-
-=======
     function bigPoster(url) {
       return String(url || "").replace("-205x347", "");
     }
@@ -517,7 +429,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       return h + "</div>";
     }
 
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     function renderDetails(item) {
       if (!$detailsContainer) {
         return;
@@ -527,46 +438,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         setBackground(null);
         return;
       }
-<<<<<<< HEAD
-      var h = '<div class="prodTitle">' + util.text(item.title) + "</div>";
-      h += '<div class="prodSinopsis">' + util.text(item.sinopsis) + "</div>";
-      if (!util.isEmpty(item.audience)) {
-        h += '<div class="prodAudience">' + util.text(item.audience) + "</div>";
-      }
-      if (!util.isEmpty(item.duration)) {
-        h += '<div class="prodDuration">' + util.text(item.duration) + " minutos</div>";
-      }
-      if (!util.isEmpty(item.year)) {
-        h += '<div class="prodYear">' + util.text(item.year) + "</div>";
-      }
-      if (!util.isEmpty(item.imdb)) {
-        h += '<div class="prodIMDB highlight">IMDB: ' + util.text(item.imdb) + "</div>";
-      }
-      h += '<div style="clear:both"><br></div>';
-      if (!util.isEmpty(item.genres)) {
-        h +=
-          '<div class="prodGenres"><span class="highlight">Géneros:</span> ' +
-          util.text(util.joinList(item.genres)) +
-          "</div>";
-      }
-      if (!util.isEmpty(item.director)) {
-        h +=
-          '<div class="prodDirector"><span class="highlight">Director:</span> ' +
-          util.text(util.joinList(item.director)) +
-          "</div>";
-      }
-      if (!util.isEmpty(item.actors)) {
-        h +=
-          '<div class="prodActors"><span class="highlight">Elenco:</span> ' +
-          util.text(util.joinList(item.actors)) +
-          "</div><br>";
-      }
-      $detailsContainer.html(h);
-      setBackground(item.poster);
-    }
-
-    /* ======================================================================
-=======
       var h = '<div class="xd-title">' + util.text(item.title) + "</div>";
       h += metaHtml(item);
       h += '<div class="xd-syn">' + util.text(item.sinopsis) + "</div>";
@@ -671,7 +542,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }, 8000);
 
     /* ======================================================================
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
      * Foco
      * ==================================================================== */
     function currentBox() {
@@ -681,15 +551,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     function syncFocusClass() {
-<<<<<<< HEAD
-      var el = currentBox();
-=======
       var s = active();
       var el = s && s.onFeature ? null : currentBox();
       if ($feature) {
         $feature.find(".xf-card").toggleClass("onFocus", !!(s && s.onFeature && XTV.state.layer === "grid"));
       }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       if (lastFocusedEl && lastFocusedEl !== el) {
         $(lastFocusedEl).removeClass("onFocus activeContent");
       }
@@ -718,23 +584,17 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         applyScroll(row, true);
       }
       syncFocusClass();
-<<<<<<< HEAD
-      renderDetails(s.currentItem());
-=======
       if (s.name === "cineclub") {
         renderSub(s);
       } else {
         renderDetails(s.currentItem());
       }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       ensureImages(row);
       if (s.rows.length > 1) {
         ensureImages(s.rows[(s.rowIndex + 1) % s.rows.length]);
       }
     }
 
-<<<<<<< HEAD
-=======
     // En Cineclub, el título y año del póster con foco junto al nombre del ciclo
     function renderSub(s) {
       for (var i = 0; i < s.rows.length; i++) {
@@ -768,7 +628,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       return name === "cineclub" ? "cineclub" : "home";
     }
 
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     /* ======================================================================
      * Cambio de pantalla
      * ==================================================================== */
@@ -789,15 +648,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       if (s.gridClass) {
         $grid.addClass(s.gridClass);
       }
-<<<<<<< HEAD
-=======
       $("body")
         .removeClass("xtv-screen-home xtv-screen-cineclub xtv-screen-list")
         .addClass("xtv-screen-" + name);
       if (XTV.menu && XTV.menu.setCurrent) {
         XTV.menu.setCurrent(sectionOf(name));
       }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       if (XTV.state.layer !== "grid") {
         XTV.setLayer("grid");
       }
@@ -808,10 +664,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         }
       }
       applyOrder(s);
-<<<<<<< HEAD
-=======
       renderFeature();
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       focusChanged(false);
     }
 
@@ -955,10 +808,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             XTV.modal.alert({ message: "No hay películas en Cineclub en este momento." });
             return;
           }
-<<<<<<< HEAD
-=======
           buildFeature(s);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
           switchTo("cineclub");
         })
         .fail(function (xhr, textStatus) {
@@ -973,15 +823,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     var LIST_TYPES = {
       genre: { path: "genres", title: "" },
-<<<<<<< HEAD
-      students: { path: "studentsOnly", title: "EXCLUSIVO PARA ALUMNOS" },
-      history: { path: "userHistory", title: "LO QUE YA VISTE" },
-      bookmark: { path: "userBookmark", title: "MI SELECCIÓN" },
-=======
       students: { path: "studentsOnly", title: "Exclusivo para alumnos" },
       history: { path: "userHistory", title: "Lo que ya viste" },
       bookmark: { path: "userBookmark", title: "Mi selección" },
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       search: { path: "search", title: "" }
     };
 
@@ -1002,19 +846,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       var titleHtml = null;
       if (opts.type === "genre") {
         query = { genreId: opts.genreId };
-<<<<<<< HEAD
-        title = String(opts.genreName || "").toUpperCase();
-      } else if (opts.type === "search") {
-        var terms = String(opts.terms || "").toUpperCase();
-        query = { searchTerms: terms };
-        titleHtml = 'RESULTADOS PARA <span class="searchTerms">' + util.esc(terms) + "</span>";
-=======
         title = String(opts.genreName || "");
       } else if (opts.type === "search") {
         var terms = String(opts.terms || "");
         query = { searchTerms: terms.toUpperCase() };
         titleHtml = 'Resultados para <span class="xr-hl">' + util.esc(terms) + "</span>";
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       }
 
       XTV.busy.start("list", function () {
@@ -1059,15 +895,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         msg = "Todavía no agregaste ninguna película a tu selección. Cuando las agregues podrás encontrarlas aquí y verlas cuando quieras.";
       } else if (opts.type === "search") {
         XTV.modal.confirm({
-<<<<<<< HEAD
-          message: "No se encuentra el texto buscado: " + opts.terms + ". ¿Querés realizar una nueva búsqueda?",
-          yes: "SÍ",
-          no: "NO",
-=======
           message: "No encontramos resultados para “" + opts.terms + "”. ¿Querés hacer otra búsqueda?",
           yes: "Buscar de nuevo",
           no: "Cancelar",
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
           focusYes: true,
           onYes: function () {
             XTV.search.open(opts.terms);
@@ -1111,90 +941,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Acciones sobre el póster con foco
      * ==================================================================== */
-<<<<<<< HEAD
-    function openCurrent() {
-      var s = active();
-      var item = s ? s.currentItem() : null;
-      if (item) {
-        XTV.actions.openMovie(item, { screen: activeName, listType: s.meta && s.meta.type });
-      }
-    }
-
-    /* ======================================================================
-     * Teclas
-     * ==================================================================== */
-    function moveHorizontal(delta) {
-      var s = active();
-      var row = s ? s.currentRow() : null;
-      if (!row) {
-        return;
-      }
-      var next = row.col + delta;
-      if (next < 0) {
-        XTV.menu.open(0);
-        return;
-      }
-      if (next > row.items.length - 1) {
-        return;
-      }
-      row.col = next;
-      focusChanged(false);
-    }
-
-    function moveVertical(delta) {
-      var s = active();
-      if (!s || s.rows.length < 2) {
-        if (s && delta > 0 && !s.complete && !s.loadingFirst && s.name === "home") {
-          s.pendingDown = true;
-          loadMoreHome();
-        }
-        return;
-      }
-      var n = s.rows.length;
-      if (delta > 0 && s.rowIndex === n - 1 && !s.complete && s.name === "home") {
-        // Llegó al final de lo cargado: se pide más y se baja al llegar
-        s.pendingDown = true;
-        loadMoreHome();
-        return;
-      }
-      s.rowIndex = (s.rowIndex + delta + n) % n;
-      applyOrder(s);
-      focusChanged(false);
-      maybeLoadMore(s);
-    }
-
-    function handleKey(action) {
-      var s = active();
-      switch (action) {
-        case "LEFT":
-          moveHorizontal(-1);
-          return true;
-        case "RIGHT":
-          moveHorizontal(1);
-          return true;
-        case "UP":
-          moveVertical(-1);
-          return true;
-        case "DOWN":
-          moveVertical(1);
-          return true;
-        case "OK":
-          openCurrent();
-          return true;
-        case "PLAY":
-        case "PLAYPAUSE":
-          if (s && s.currentItem()) {
-            XTV.player.play(s.currentItem());
-          }
-          return true;
-        case "BACK":
-          if (activeName && activeName !== "home") {
-            goHome(false);
-          } else {
-            XTV.actions.confirmExit();
-          }
-          return true;
-=======
     function currentItem() {
       var s = active();
       if (s && s.onFeature && s.feature && s.feature.items.length) {
@@ -1258,36 +1004,10 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         renderFeature();
         focusChanged(false);
         return true;
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       }
       return false;
     }
 
-<<<<<<< HEAD
-    XTV.grid = {
-      goHome: goHome,
-      showCineclub: showCineclub,
-      showList: showList,
-      reloadList: reloadList,
-      handleKey: handleKey,
-      syncFocusClass: syncFocusClass,
-      activeName: function () {
-        return activeName;
-      },
-      currentItem: function () {
-        var s = active();
-        return s ? s.currentItem() : null;
-      },
-      refocus: function () {
-        focusChanged(false);
-      }
-    };
-  })(window.jQuery, window.XTV);
-
-  /*
-   * Xiclos TV v2 - acciones: ficha de película, Mi lista, géneros,
-   * salir y cerrar sesión.
-=======
     function moveVertical(delta) {
       var s = active();
       // En Cineclub el carrusel es una fila más del ciclo vertical
@@ -1385,7 +1105,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
   /*
    * Xiclos TV v2 - acciones: ficha de película, Mi lista, salir y cerrar sesión.
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
    * ES5 puro.
    */
   (function ($, XTV) {
@@ -1396,11 +1115,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var modal = XTV.modal;
 
     /* ======================================================================
-<<<<<<< HEAD
-     * Ficha de película (VER AHORA / MI LISTA)
-=======
      * Ficha de película (tarjeta centrada)
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
      * ==================================================================== */
     function openMovie(item, context) {
       var gen = ++openMovie.gen;
@@ -1430,42 +1145,16 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
     openMovie.gen = 0;
 
-<<<<<<< HEAD
-    function bookmarkLabel(bookmarked) {
-      return bookmarked ? "QUITAR DE MI LISTA" : "AGREGAR A MI LISTA";
-=======
     function setBookmarkButton($b, bookmarked) {
       $b.empty()
         .append(XTV.icon(bookmarked ? "check" : "plus", "xm-btn-icon"))
         .append($("<span></span>").text(bookmarked ? "En Mi lista" : "Agregar a Mi lista"))
         .toggleClass("bookmarked", bookmarked);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     }
 
     function showMovieModal(item, context, bookmarked, canBookmark) {
       var changed = false;
       var saving = false;
-<<<<<<< HEAD
-      var $el = $('<div id="modalConfirmAction" class="modal"></div>');
-      var $confirm = $('<p id="confirm" class="bookmarkModal"></p>');
-      var poster = String(item.poster || "").replace("-205x347", "");
-      if (poster) {
-        $confirm.append($('<img alt="">').attr("src", poster));
-      }
-      $confirm.append($('<p class="moviename"></p>').text(util.plain(item.title)));
-      var $play = $('<button id="playMovie" class="confirmField bookmarkButton"></button>').text(
-        "VER AHORA"
-      );
-      $confirm.append($play);
-      var $bookmark = null;
-      if (canBookmark) {
-        $bookmark = $('<button id="manageBookmark" class="confirmField bookmarkButton"></button>')
-          .text(bookmarkLabel(bookmarked))
-          .toggleClass("bookmarked", bookmarked);
-        $confirm.append($bookmark);
-      }
-      $el.append($confirm);
-=======
       var sh = modal.shell("modalConfirmAction", "xm-movie");
       var poster = XTV.grid.bigPoster(item.poster);
       var $poster = $('<div class="xm-poster"></div>');
@@ -1489,7 +1178,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       $info.append($actions);
       sh.$card.append($poster).append($info);
       sh.$el.append('<div class="xm-hint">Volver para cerrar</div>');
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
 
       function toggleBookmark() {
         if (saving) {
@@ -1508,11 +1196,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             bookmarked = !bookmarked;
             changed = true;
             if ($bookmark) {
-<<<<<<< HEAD
-              $bookmark.text(bookmarkLabel(bookmarked)).toggleClass("bookmarked", bookmarked);
-=======
               setBookmarkButton($bookmark, bookmarked);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
             }
           })
           .fail(function (xhr, textStatus) {
@@ -1529,13 +1213,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
 
       modal.open({
-<<<<<<< HEAD
-        $el: $el,
-        items: ".confirmField",
-=======
         $el: sh.$el,
         items: ".xm-btn",
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         focus: $play.get(0),
         onActivate: function (el) {
           if (el === $play.get(0)) {
@@ -1563,71 +1242,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     /* ======================================================================
-<<<<<<< HEAD
-     * Explorar por género
-     * ==================================================================== */
-    function genres() {
-      var gen = ++genres.gen;
-      XTV.busy.start("genres", function () {
-        XTV.api.abort("genres");
-      });
-      XTV.api
-        .get(P.genresList, { type: "Género" }, "genres")
-        .done(function (res) {
-          if (gen !== genres.gen) {
-            return;
-          }
-          XTV.busy.end("genres");
-          var data = (res && res.data) || [];
-          if (!data.length) {
-            modal.alert({ message: "No hay géneros disponibles en este momento." });
-            return;
-          }
-          var $el = $('<div id="modalGenreList" class="modal"></div>');
-          modal.decorate($el);
-          $el.append('<p class="moviename">EXPLORAR POR GÉNERO</p>');
-          var $confirm = $('<p id="confirm" class="bookmarkGenreList"></p>');
-          for (var i = 0; i < data.length; i++) {
-            $confirm.append(
-              $('<button class="confirmField genreList"></button>')
-                .text(util.plain(data[i].genre).toUpperCase())
-                .attr("data-index", i)
-            );
-          }
-          $el.append($confirm);
-          modal.open({
-            $el: $el,
-            items: ".confirmField",
-            onActivate: function (el) {
-              var g = data[parseInt($(el).attr("data-index"), 10)];
-              modal.close(true);
-              XTV.grid.showList({ type: "genre", genreId: g.genreId, genreName: util.plain(g.genre) });
-            }
-          });
-        })
-        .fail(function (xhr, textStatus) {
-          if (XTV.api.isAbort(xhr, textStatus) || gen !== genres.gen) {
-            return;
-          }
-          XTV.busy.end("genres");
-          XTV.log.error("genresList", xhr);
-          XTV.message.show("No pudimos cargar los géneros. Probá de nuevo en unos minutos.");
-        });
-    }
-    genres.gen = 0;
-
-    /* ======================================================================
-=======
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
      * Salir y cerrar sesión
      * ==================================================================== */
     function confirmExit() {
       modal.confirm({
-<<<<<<< HEAD
-        message: "¿Realmente querés cerrar Xiclos?",
-=======
         message: "¿Querés cerrar Xiclos?",
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         onYes: function () {
           XTV.platform.exit();
         }
@@ -1637,11 +1256,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     function confirmLogout() {
       modal.confirm({
         message:
-<<<<<<< HEAD
-          "¿Realmente querés cerrar tu sesión en Xiclos? Si cerrás tu sesión deberás volver a sincronizar tu dispositivo para disfrutar Xiclos nuevamente.",
-=======
           "¿Querés cerrar tu sesión? Vas a tener que volver a sincronizar este dispositivo para usar Xiclos.",
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         onYes: function () {
           XTV.login.logout();
         }
@@ -1650,19 +1265,13 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     XTV.actions = {
       openMovie: openMovie,
-<<<<<<< HEAD
-      genres: genres,
-=======
       genres: function () {
         XTV.browse.open();
       },
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       confirmExit: confirmExit,
       confirmLogout: confirmLogout
     };
   })(window.jQuery, window.XTV);
-<<<<<<< HEAD
-=======
 
   /*
    * Xiclos TV v2 - Explorar
@@ -1984,5 +1593,4 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
     };
   })(window.jQuery, window.XTV);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
 }

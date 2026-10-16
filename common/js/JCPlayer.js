@@ -173,11 +173,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       var s = session;
       XTV.modal.close(true);
       // Capa a la que se vuelve al salir (grilla o búsqueda)
-<<<<<<< HEAD
-      s.returnLayer = XTV.state.layer === "search" ? "search" : "grid";
-=======
       s.returnLayer = XTV.state.layer === "search" || XTV.state.layer === "browse" ? XTV.state.layer : "grid";
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       XTV.setLayer("video");
       XTV.loader.show("player");
 

@@ -17,13 +17,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
    *   resultados que ya hay y después se completan con la respuesta.
    * - Fila "Personas" (directores y elenco) armada a partir de los resultados.
    * - Búsquedas recientes guardadas en la TV.
-<<<<<<< HEAD
-   * - "Teclado TV" abre el teclado del sistema (puntero de LG, teclado USB).
-=======
    * - Navegación por zonas (teclado, personas, películas, recientes) con
    *   reglas explícitas: en las listas, derecha/izquierda avanzan en orden
    *   y pasan de fila; no se navega por cercanía en pantalla.
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
    *
    * ES5 puro.
    */
@@ -42,24 +38,14 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         "G", "H", "I", "J", "K", "L",
         "M", "N", "Ñ", "O", "P", "Q",
         "R", "S", "T", "U", "V", "W",
-<<<<<<< HEAD
-        "X", "Y", "Z", { a: "mode", label: "123" }, { a: "del", label: "BORRAR", w: 2 },
-        { a: "space", label: "ESPACIO", w: 2 }, { a: "clear", label: "VACIAR", w: 2 }, { a: "ime", label: "TECLADO TV", w: 2 }
-=======
         "X", "Y", "Z", { a: "mode", label: "123" }, { a: "del", label: "Borrar", w: 2 },
         { a: "space", label: "Espacio", w: 3 }, { a: "clear", label: "Vaciar", w: 3 }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       ],
       num: [
         "1", "2", "3", "4", "5", "6",
         "7", "8", "9", "0", "-", ".",
-<<<<<<< HEAD
-        { a: "mode", label: "ABC", w: 2 }, { a: "del", label: "BORRAR", w: 2 }, { a: "clear", label: "VACIAR", w: 2 },
-        { a: "space", label: "ESPACIO", w: 3 }, { a: "ime", label: "TECLADO TV", w: 3 }
-=======
         { a: "mode", label: "ABC", w: 2 }, { a: "del", label: "Borrar", w: 2 }, { a: "clear", label: "Vaciar", w: 2 },
         { a: "space", label: "Espacio", w: 6 }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       ]
     };
 
@@ -77,11 +63,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       person: null,
       items: [], // resultados mostrados
       focus: null,
-<<<<<<< HEAD
-      ime: false,
-=======
       lastKey: null,
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       gen: 0,
       shownFor: null
     };
@@ -416,15 +398,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       if (people.length) {
         html += '<p class="xs-label">Personas</p><div class="xs-people">';
         for (var i = 0; i < people.length; i++) {
-<<<<<<< HEAD
-          html +=
-            '<div class="xs-person xs-f" data-person="' +
-            i +
-            '">' +
-            util.esc(people[i].name) +
-            '<span class="role">' +
-            (people[i].role === "Director" ? "Director" : "Elenco") +
-=======
           var ini = people[i].name.split(/\s+/);
           ini = (ini[0] ? ini[0].charAt(0) : "") + (ini.length > 1 ? ini[ini.length - 1].charAt(0) : "");
           html +=
@@ -436,7 +409,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             util.esc(people[i].name) +
             '<span class="role">' +
             (people[i].role === "Director" ? "Dirección" : "Elenco") +
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
             "</span></div>";
         }
         html += "</div>";
@@ -482,22 +454,16 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       });
     }
 
-<<<<<<< HEAD
-=======
     function posterLoaded() {
       this.className = "ok";
     }
 
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     function loadPosters(upTo) {
       var imgs = $body.find(".xs-movie img");
       var limit = Math.max(upTo + 10, 10);
       for (var i = 0; i < imgs.length && i < limit; i++) {
         if (!imgs[i].getAttribute("src") && state.items[i] && state.items[i].poster) {
-<<<<<<< HEAD
-=======
           imgs[i].onload = posterLoaded;
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
           imgs[i].setAttribute("src", state.items[i].poster);
         }
       }
@@ -506,10 +472,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Foco
      * ==================================================================== */
-<<<<<<< HEAD
-    function focusables() {
-      return $root ? $root.find(".xs-f") : $();
-=======
     function zoneOf(el) {
       var $el = $(el);
       if ($el.hasClass("xs-key")) {
@@ -636,7 +598,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return;
       }
       backToKeys();
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     }
 
     function focus(el) {
@@ -648,15 +609,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       state.focus = el;
       $(el).addClass("onFocus");
-<<<<<<< HEAD
-=======
       var zone = zoneOf(el);
       if (zone === "keys") {
         state.lastKey = el;
       } else if (zone === "people") {
         state.lastPerson = el;
       }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       ensureVisible(el);
       var idx = $(el).attr("data-movie");
       if (idx !== undefined) {
@@ -728,28 +686,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
     }
 
-<<<<<<< HEAD
-    function startIme() {
-      state.ime = true;
-      $input.prop("readOnly", false).addClass("ime");
-      $input.get(0).focus();
-      try {
-        var len = $input.val().length;
-        $input.get(0).setSelectionRange(len, len);
-      } catch (e) {}
-    }
-
-    function stopIme() {
-      if (!state.ime) {
-        return;
-      }
-      state.ime = false;
-      $input.prop("readOnly", true).removeClass("ime");
-      $input.get(0).blur();
-    }
-
-=======
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     function activate(el) {
       var $el = $(el);
       if ($el.attr("data-k") !== undefined) {
@@ -770,11 +706,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           state.mode = state.mode === "alpha" ? "num" : "alpha";
           renderKeys();
           focus($keys.find('[data-a="mode"]').get(0));
-<<<<<<< HEAD
-        } else if (a === "ime") {
-          startIme();
-=======
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         }
         return;
       }
@@ -814,16 +745,10 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     function build() {
       $root = $(
         '<div id="xtvSearch">' +
-<<<<<<< HEAD
-          '<div class="xs-left"><div class="xs-title">BUSCAR</div>' +
-          '<input id="xsInput" class="xs-input" readonly maxlength="35" autocomplete="off" spellcheck="false">' +
-          '<div class="xs-keys"></div></div>' +
-=======
           '<div class="xs-left"><div class="xs-title">BUSCAR</div><div class="xs-field">' +
           '<span class="xs-sicon">' + XTV.icon("search", "") + "</span>" +
           '<input id="xsInput" class="xs-input" readonly tabindex="-1" maxlength="35" autocomplete="off" spellcheck="false"></div>' +
           '<div class="xs-keys"></div><div class="xs-tip">Los números del control también escriben</div></div>' +
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
           '<div class="xs-right"><img class="xs-logo" alt="Xiclos" src="' +
           util.esc(C.IMG + "logo.png") +
           '"><div class="xs-status"></div><div class="xs-body"></div></div>' +
@@ -834,23 +759,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       $status = $root.find(".xs-status");
       $body = $root.find(".xs-body");
 
-<<<<<<< HEAD
-      // Teclado del sistema
-      $input.on("input", function () {
-        if (state.ime) {
-          state.query = String($input.val() || "").substring(0, 35);
-          queryChanged();
-        }
-      });
-      $input.on("blur", function () {
-        if (state.ime) {
-          state.ime = false;
-          $input.prop("readOnly", true).removeClass("ime");
-        }
-      });
-
-=======
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       // Puntero
       $root.on("mousemove", ".xs-f", function () {
         if (XTV.pointer.isActive() && state.focus !== this) {
@@ -862,12 +770,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         focus(this);
         activate(this);
       });
-<<<<<<< HEAD
-      $root.on("click", "#xsInput", function () {
-        startIme();
-      });
-=======
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
     }
 
     function open(prefill) {
@@ -879,30 +781,20 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       state.open = true;
       state.mode = "alpha";
       state.focus = null;
-<<<<<<< HEAD
-=======
       state.lastKey = null;
       state.lastPerson = null;
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       state.view = "recent";
       state.person = null;
       renderKeys();
       XTV.setLayer("search");
-<<<<<<< HEAD
-=======
       if (XTV.menu && XTV.menu.setCurrent) {
         XTV.menu.setCurrent("buscar");
       }
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       focus($keys.find(".xs-key").get(0));
       setQuery(prefill || "", !!prefill);
     }
 
     function close() {
-<<<<<<< HEAD
-      stopIme();
-=======
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
       scheduled.cancel();
       XTV.api.abort("suggest");
       state.gen++;
@@ -917,30 +809,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     function handleKey(action) {
-<<<<<<< HEAD
-      if (state.ime) {
-        if (action === "LEFT" || action === "RIGHT" || action === "SPACE") {
-          return false; // mueven el cursor / escriben en el campo
-        }
-        if (action === "OK" || action === "DONE" || action === "CANCEL" || action === "BACK") {
-          stopIme();
-          return true;
-        }
-        if (action === "UP" || action === "DOWN") {
-          stopIme();
-        } else {
-          return false;
-        }
-      }
-      if (XTV.keys.isNav(action)) {
-        var next = XTV.nav.pick(focusables(), state.focus, action);
-        if (next) {
-          focus(next);
-        }
-=======
       if (XTV.keys.isNav(action)) {
         navigate(action);
->>>>>>> 4e40a3d (Ajustes a la nueva versión con rediseño)
         return true;
       }
       if (action === "OK") {
