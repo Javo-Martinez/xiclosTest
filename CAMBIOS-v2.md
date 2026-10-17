@@ -45,6 +45,17 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
 
+## v2.6: "Activá Xiclos en tu TV" (vinculación con QR)
+
+Cambian `common/js/login.js`, `common/js/config.js` y `common/css/custom.css` (este zip incluye también `common/js/JCPlayer.js` de la v2.5).
+
+- Pantalla nueva en lugar del texto del PIN: **QR a la izquierda** como vía principal ("Escaneá con tu celular") y, a la derecha, "¿No podés escanear?" → 1. Entrá a **xiclos.com/sync** → 2. Escribí este código (6 dígitos en grupos de 3). Al pie: "La TV se activa sola en unos segundos." / "El código cambia cada minuto."
+- Letra grande y alto contraste, tipografía **Atkinson Hyperlegible** (se carga de Google Fonts; si no llega, usa Roboto).
+- **QR:** abre `https://xiclos.com/sync?codigo=XXXXXX`. Se genera en la TV con un generador QR de licencia MIT (Kazuhiko Arase) incluido dentro de `login.js`, sin servicios externos. Se regenera junto con el código cada minuto. La dirección y el nombre del parámetro están en `XTV.config` (`SYNC_URL`, `SYNC_PARAM`).
+- Mismo flujo de antes: `newPin` para el código, consulta automática a `checkPin` cada 10 s y la TV entra sola. OK fuerza la consulta; Volver ofrece salir. Al renovar el código ya no aparece el indicador de carga.
+- **Pendiente web:** que /sync precargue el código desde la dirección; corregir el texto de la tarjeta ("Escribí el código que ves en tu TV y tocá Vincular") y el subtítulo cortado.
+- **Pendiente backend:** que el código anterior siga siendo válido unos minutos después de rotar. A futuro, dirección corta con 301 (xiclos.com/tv o /activar): se cambia en `SYNC_URL`.
+
 ## v2.5: estilo de los subtítulos
 
 Cambian `common/js/JCPlayer.js` y `common/css/custom.css`.
