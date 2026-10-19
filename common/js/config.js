@@ -55,7 +55,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     // PIN de sincronización
     PIN_RENEW_SECONDS: 60,
     // Vinculación: el QR abre SYNC_URL?SYNC_PARAM=<código>
-    SYNC_URL: "https://xiclos.com/sync",
+    SYNC_URL: "https://xiclos.com/activar",
     SYNC_PARAM: "codigo",
     PIN_POLL_SECONDS: 10,
 

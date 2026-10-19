@@ -1312,7 +1312,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       modal.confirm({
         message: "¿Querés cerrar Xiclos?",
         onYes: function () {
-          XTV.platform.exit();
+          XTV.app.quit();
         }
       });
     }

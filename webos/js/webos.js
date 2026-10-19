@@ -30,14 +30,20 @@
       callback(fallback);
     },
 
+    // "Salir": cierra la app. platformBack() solo volvía al inicio de la TV
+    // y la app seguía abierta en segundo plano.
     exit: function () {
       try {
-        if (window.webOS && window.webOS.platformBack) {
-          window.webOS.platformBack();
-          return;
-        }
+        window.close();
       } catch (e) {}
-      window.close();
+      // Si el sistema no la cerró, al menos vuelve al inicio de la TV
+      setTimeout(function () {
+        try {
+          if (window.webOS && window.webOS.platformBack) {
+            window.webOS.platformBack();
+          }
+        } catch (e) {}
+      }, 300);
     },
 
     hide: function () {

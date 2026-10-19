@@ -2956,6 +2956,9 @@ body.xtv.xtv-cap-m #div_vimeo_player .jw-text-track-cue {
 body.xtv.xtv-cap-l #div_vimeo_player .jw-text-track-cue {
   font-size: 3.4vw !important;
 }
+body.xtv.xtv-cap-xl #div_vimeo_player .jw-text-track-cue {
+  font-size: 4.4vw !important;
+}
 body.xtv.xtv-cap-s #div_vimeo_player video::cue {
   font-size: 2vw;
 }
@@ -2964,6 +2967,9 @@ body.xtv.xtv-cap-m #div_vimeo_player video::cue {
 }
 body.xtv.xtv-cap-l #div_vimeo_player video::cue {
   font-size: 3.4vw;
+}
+body.xtv.xtv-cap-xl #div_vimeo_player video::cue {
+  font-size: 4.4vw;
 }
 body.xtv.xtv-cap-white #div_vimeo_player .jw-text-track-cue {
   color: #FFFFFF !important;

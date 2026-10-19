@@ -1006,7 +1006,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var CAP_SIZES = [
       { id: "s", label: "Pequeño" },
       { id: "m", label: "Mediano" },
-      { id: "l", label: "Grande" }
+      { id: "l", label: "Grande" },
+      { id: "xl", label: "Extra grande" }
     ];
     var CAP_COLORS = [
       { id: "white", label: "Blanco" },
