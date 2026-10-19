@@ -3,7 +3,7 @@
 La v2 se publica **reemplazando en el servidor los JS y CSS que cargan los `index.html` empaquetados**, con los mismos nombres. Los `index.html` de las tiendas no se tocan, así que no hay que homologar.
 
 - **LG y Samsung** pasan a la v2.
-- **Amazon** sigue con la versión anterior. Su adaptador para la v2 ya está programado, pero apagado.
+- **Amazon** pasa a la v2 desde la v2.8 (ver más abajo).
 
 ## Qué publicar
 
@@ -44,6 +44,17 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 ### A verificar antes de publicar
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
+
+## v2.8: Amazon pasa a la v2
+
+Cambian `common/js/jquery.min.js`, `amazon/js/amazon.js` y `common/js/arrows.js` (este zip incluye también los archivos de la v2.7).
+
+- **Amazon (Fire TV con Fire OS) usa la v2:** `AMAZON_V2 = true` en `common/js/jquery.min.js`. Como el `index.html` de Amazon carga los archivos del servidor, no hay que volver a publicar la app en la tienda.
+- **Respaldo:** `?v1=1` en la dirección carga la versión anterior en Amazon (para comparar o en una emergencia). Para volver atrás para todos: `AMAZON_V2 = false`.
+- **Marca:** el `index.html` de Amazon no trae el triángulo ni el logo; el adaptador los crea.
+- **HOME y Salir** cierran la app también en Amazon (mismo método de cierre que usaba la versión anterior).
+- **A verificar en un Fire TV** (Web App Tester): activación, Home, ficha, reproductor (barra, subtítulos, adelantar), búsqueda con el teclado propio, Cineclub, Explorar, Volver en cada pantalla, HOME y Salir.
+- Los equipos nuevos con **Vega OS** (Fire TV Stick 4K Select en adelante) no corren las apps de Fire OS: necesitan una app propia de Vega.
 
 ## v2.7: HOME cierra la app, subtítulos XL y /activar
 

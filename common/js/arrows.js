@@ -60,7 +60,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var wentHidden = false;
     function isTV() {
       var n = XTV.platform && XTV.platform.name;
-      return n === "webos" || n === "tizen";
+      return n === "webos" || n === "tizen" || n === "amazon";
     }
     function onVisibility() {
       if (!isTV()) {
