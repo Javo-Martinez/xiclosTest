@@ -34,6 +34,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var $header = null;
     var $detailsContainer = null;
     var lastFocusedEl = null;
+    var bgState = { idx: 0, src: null };
     var layout = { itemWidth: 0, baseLeft: 0 };
 
     /* ======================================================================
@@ -98,21 +99,25 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         return;
       }
       $("#mainContent").remove();
-      var $main = $('<div id="mainContent"><div id="header"></div><div id="grid"></div></div>');
+      var $main = $(
+        '<div id="mainContent"><div id="xtvHeader"><div class="xd"></div></div><div id="xtvGrid"></div></div>'
+      );
       if ($("#result").length) {
         $("#result").after($main);
       } else {
         $("body").append($main);
       }
-      $header = $main.find("#header");
-      $grid = $main.find("#grid");
-      var $details = $('<div class="prodDetails" style="display:block"><div class="detailsContainer"></div></div>');
-      $header.append($details);
-      $detailsContainer = $details.find(".detailsContainer");
+      $header = $main.find("#xtvHeader");
+      $grid = $main.find("#xtvGrid");
+      $detailsContainer = $main.find(".xd");
+      // Fondo: dos capas para el fundido cruzado y los degradados de lectura
+      $("#mainContainer")
+        .empty()
+        .append('<div class="xb-layer"></div><div class="xb-layer"></div><div class="xb-scrim"></div>');
 
       // Puntero: pasar por un póster de la tira con foco lo enfoca sin
       // desplazar la tira (así el contenido no se mueve bajo el puntero).
-      $grid.on("mousemove", ".box", function () {
+      $grid.on("mousemove", ".xr-item", function () {
         if (!XTV.pointer.isActive()) {
           return;
         }
@@ -130,7 +135,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         s.rows[pos.row].col = pos.col;
         focusChanged(true);
       });
-      $grid.on("click", ".box", function () {
+      $grid.on("click", ".xr-item", function () {
         var pos = positionOf(this);
         var s = active();
         if (!pos || !s) {
@@ -165,7 +170,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     function positionOf(boxEl) {
       var $box = $(boxEl);
-      var $row = $box.closest(".gridContent");
+      var $row = $box.closest(".xr-row");
       if (!$row.length) {
         return null;
       }
@@ -180,32 +185,25 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
      * ==================================================================== */
     function boxHtml(items, j) {
       var n = items.length;
-      var cls = "box";
+      var cls = "xr-item";
       if (j === 0) {
         cls += " firstElement";
       } else if (j === n - 1) {
         cls += " lastElement";
       }
-      return (
-        '<div class="' +
-        cls +
-        '" data-col="' +
-        j +
-        '"><img class="poster" alt=""><div class="posterTitle">' +
-        util.text(items[j].title) +
-        "</div></div>"
-      );
+      return '<div class="' + cls + '" data-col="' + j + '"><div class="xr-poster"><img alt=""></div></div>';
     }
 
     function buildRow(row, index) {
       var html =
-        '<div class="gridContent" data-row="' +
+        '<div class="xr-row" data-row="' +
         index +
-        '"><div class="verticalRectangle"></div><div class="stripTitle">' +
+        '"><div class="xr-title"><span class="xr-name">' +
         (row.titleHtml || util.text(row.title)) +
-        '</div><div class="content"></div></div>';
+        '</span><span class="xr-sub"></span></div><div class="xr-track"></div></div>';
       row.el = $(html).get(0);
-      row.content = $(row.el).find(".content").get(0);
+      row.content = $(row.el).find(".xr-track").get(0);
+      row.sub = $(row.el).find(".xr-sub").get(0);
       row.boxes = row.content.children;
       row.imgs = row.content.getElementsByTagName("img");
       row.loaded = {};
@@ -261,12 +259,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     function itemWidth() {
       if (!layout.itemWidth) {
-        var box = $grid ? $grid.find(".box:visible").get(0) : null;
+        var box = $grid ? $grid.find(".xr-item:visible").get(0) : null;
         if (box) {
           layout.itemWidth = $(box).outerWidth(true) || 0;
           // Posición izquierda de la tira sin desplazamiento. offsetLeft no
           // incluye el transform, así que sirve aunque la tira esté corrida.
-          var el = $(box).closest(".content").get(0);
+          var el = $(box).closest(".xr-track").get(0);
           var left = 0;
           while (el) {
             left += el.offsetLeft || 0;
@@ -301,7 +299,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       var n = row.items.length;
       var avail = viewportWidth() - layout.baseLeft - 30;
-      var maxOffset = Math.max(0, n * w - avail);
+      // Al final de la tira se frena en un múltiplo del ancho del afiche:
+      // así el primero que se ve a la izquierda nunca queda cortado.
+      var maxOffset = Math.max(0, Math.ceil((n * w - avail) / w) * w);
       var target = Math.min(row.col * w, maxOffset);
       if (fromPointer) {
         // Con el puntero solo se desplaza si el póster no se ve completo
@@ -326,6 +326,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
     }
 
+    // Fundido al cargar el póster
+    function imgLoaded() {
+      this.className = "ok";
+    }
+
     function ensureImages(row) {
       if (!row) {
         return;
@@ -341,6 +346,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           row.loaded[j] = true;
           var src = row.items[j].poster;
           if (src) {
+            row.imgs[j].onload = imgLoaded;
             row.imgs[j].src = src;
           }
         }
@@ -350,14 +356,277 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Detalle y fondo
      * ==================================================================== */
-    var setBackground = util.debounce(function (poster) {
-      $("#mainContainer").css({
-        "background-image": poster ? util.cssUrl(poster) : "none",
-        "background-repeat": "no-repeat",
-        "background-position": "0px 25%",
-        "background-size": "cover"
+    // Imágenes de Firebase Storage. El afiche llega como miniatura
+    // (movies/<id>/slider-2_150x260.jpg); al lado están el original
+    // (movies/<id>/slider-2.jpg) y la horizontal que usa el sitio web
+    // (movies_landscape/<id>/slider-1.jpg).
+    var FB_IMG = /^(https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^\/]+\/o\/)movies%2F([^%?\/]+)%2F([^?]+)/i;
+
+    function bigPoster(url) {
+      url = String(url || "");
+      var m = url.match(FB_IMG);
+      if (m) {
+        var file = m[3].replace(/_\d+x\d+(\.[a-z]+)$/i, "$1");
+        if (file !== m[3]) {
+          // El token de la miniatura no sirve para el original: la lectura es pública
+          return m[1] + "movies%2F" + m[2] + "%2F" + file + "?alt=media";
+        }
+        return url;
+      }
+      return url.replace("-205x347", "");
+    }
+
+    function landscapeOf(url) {
+      var m = String(url || "").match(FB_IMG);
+      return m ? m[1] + "movies_landscape%2F" + m[2] + "%2Fslider-1.jpg?alt=media" : "";
+    }
+
+    // Imágenes a probar para el fondo, de mejor a peor
+    function backgroundsOf(item) {
+      var list = [];
+      var add = function (u, wide) {
+        if (u) {
+          for (var i = 0; i < list.length; i++) {
+            if (list[i].src === u) {
+              return;
+            }
+          }
+          list.push({ src: u, wide: wide });
+        }
+      };
+      if (item && item.poster) {
+        add(landscapeOf(item.poster), true);
+        add(bigPoster(item.poster), false);
+        add(item.poster, false);
+      }
+      return list;
+    }
+
+    /* Caché de imágenes grandes
+     * Cada imagen se pide una sola vez. Las cargadas se guardan (hasta
+     * IMG_KEEP) para mostrarlas al instante si se vuelve a ellas; las que no
+     * existen se recuerdan para no volver a pedirlas. */
+    var IMG_KEEP = 24;
+    var imgs = {};
+    var imgOrder = [];
+
+    function imgState(src) {
+      return imgs[src] ? imgs[src].state : "";
+    }
+
+    function loadImg(src, cb) {
+      var e = imgs[src];
+      if (e) {
+        if (e.state === "loading") {
+          if (cb) {
+            e.cbs.push(cb);
+          }
+        } else if (cb) {
+          cb(e.state === "ok");
+        }
+        return;
+      }
+      e = imgs[src] = { state: "loading", cbs: cb ? [cb] : [], img: new Image() };
+      var finish = function (ok) {
+        e.state = ok ? "ok" : "bad";
+        e.img.onload = e.img.onerror = null;
+        if (ok) {
+          imgOrder.push(src);
+          while (imgOrder.length > IMG_KEEP) {
+            delete imgs[imgOrder.shift()];
+          }
+        }
+        var cbs = e.cbs;
+        e.cbs = [];
+        for (var i = 0; i < cbs.length; i++) {
+          cbs[i](ok);
+        }
+      };
+      e.img.onload = function () {
+        finish(true);
+      };
+      e.img.onerror = function () {
+        finish(false);
+      };
+      e.img.src = src;
+    }
+
+    // Carga la primera imagen de la lista que exista y llama a done(opción)
+    function firstLoadable(list, done) {
+      var i = 0;
+      (function next() {
+        while (i < list.length && imgState(list[i].src) === "bad") {
+          i++;
+        }
+        if (i >= list.length) {
+          done(null);
+          return;
+        }
+        var opt = list[i];
+        loadImg(opt.src, function (ok) {
+          if (ok) {
+            done(opt);
+          } else {
+            i++;
+            next();
+          }
+        });
+      })();
+    }
+
+    // Pone en el contenedor la misma imagen ya cargada (no un fondo CSS con
+    // la URL): así el televisor no la vuelve a descargar ni a decodificar.
+    function putImg(box, src) {
+      var e = imgs[src];
+      var img = e && e.state === "ok" ? e.img : null;
+      if (!img) {
+        img = new Image();
+        img.src = src;
+      }
+      if (img.parentNode && img.parentNode !== box) {
+        // Ya se está mostrando en otro lado: copia (sale de la caché)
+        img = img.cloneNode(false);
+      }
+      while (box.firstChild) {
+        box.removeChild(box.firstChild);
+      }
+      img.alt = "";
+      box.appendChild(img);
+    }
+
+    // Mejor imagen ya cargada de la lista (sin la miniatura, que se ve pixelada)
+    function bestLoaded(list) {
+      for (var i = 0; i < list.length; i++) {
+        var st = imgState(list[i].src);
+        if (st === "ok") {
+          return list[i];
+        }
+        if (st !== "bad") {
+          return null; // la mejor todavía puede llegar
+        }
+      }
+      return null;
+    }
+
+    function showLayer(opt) {
+      var layers = $("#mainContainer .xb-layer").get();
+      if (layers.length < 2) {
+        return;
+      }
+      if (bgState.shown === opt.src) {
+        return;
+      }
+      bgState.shown = opt.src;
+      var next = layers[1 - bgState.idx];
+      putImg(next, opt.src);
+      next.className = "xb-layer" + (opt.wide ? " wide" : "");
+      next.style.opacity = "1";
+      layers[bgState.idx].style.opacity = "0";
+      bgState.idx = 1 - bgState.idx;
+    }
+
+    function hideLayers() {
+      bgState.shown = "";
+      $("#mainContainer .xb-layer").css("opacity", "0");
+    }
+
+    // Fondo con fundido cruzado entre dos capas (solo opacity, sin blur).
+    // Si la imagen ya está cargada se muestra en el acto; si no, el fondo
+    // anterior se apaga enseguida (para no quedar con el de otra película)
+    // y la nueva aparece apenas llega.
+    function applyBackground(item) {
+      var key = item ? item.poster || "" : "";
+      if (key === bgState.src) {
+        return;
+      }
+      bgState.src = key;
+      var list = backgroundsOf(item);
+      if (!list.length) {
+        hideLayers();
+        return;
+      }
+      var ready = bestLoaded(list);
+      if (ready) {
+        showLayer(ready);
+        return;
+      }
+      hideLayers();
+      firstLoadable(list, function (opt) {
+        if (bgState.src === key && opt) {
+          showLayer(opt);
+        }
       });
-    }, C.BACKGROUND_DELAY_MS);
+    }
+    var setBackground = util.debounce(applyBackground, C.BACKGROUND_DELAY_MS);
+
+    // Precarga el fondo de los vecinos del foco para que, al moverse, ya esté.
+    // De a una imagen por vez y solo si el foco sigue en el mismo lugar.
+    var prefetchGen = 0;
+    var prefetchLater = util.debounce(function (items) {
+      var myGen = ++prefetchGen;
+      var k = 0;
+      (function next() {
+        if (myGen !== prefetchGen || k >= items.length) {
+          return;
+        }
+        var list = backgroundsOf(items[k++]);
+        if (!list.length || bestLoaded(list)) {
+          next();
+          return;
+        }
+        firstLoadable(list, function () {
+          next();
+        });
+      })();
+    }, 400);
+
+    function prefetchAround(row) {
+      if (!row || !row.items) {
+        return;
+      }
+      var items = [];
+      var order = [1, 2, -1, 3];
+      for (var i = 0; i < order.length; i++) {
+        var it = row.items[row.col + order[i]];
+        if (it) {
+          items.push(it);
+        }
+      }
+      prefetchLater(items);
+    }
+
+    function metaHtml(item) {
+      var parts = [];
+      if (!util.isEmpty(item.duration)) {
+        parts.push(util.text(item.duration) + " min");
+      }
+      if (!util.isEmpty(item.year)) {
+        parts.push(util.text(item.year));
+      }
+      if (!util.isEmpty(item.imdb)) {
+        parts.push("IMDb " + util.text(item.imdb));
+      }
+      var h = '<div class="xd-meta">';
+      if (!util.isEmpty(item.audience)) {
+        h += '<span class="xd-age">' + util.text(item.audience) + "</span>";
+      }
+      h += "<span>" + parts.join('</span><span class="xd-dot">·</span><span>') + "</span></div>";
+      return h;
+    }
+
+    function creditsHtml(item, withActors) {
+      var h = '<div class="xd-credits">';
+      if (!util.isEmpty(item.genres)) {
+        h += '<div><span class="xd-lbl">Géneros</span>' + util.text(util.joinList(item.genres)) + "</div>";
+      }
+      if (!util.isEmpty(item.director)) {
+        h += '<div><span class="xd-lbl">Dirección</span>' + util.text(util.joinList(item.director)) + "</div>";
+      }
+      if (withActors && !util.isEmpty(item.actors)) {
+        h += '<div><span class="xd-lbl">Elenco</span>' + util.text(util.joinList(item.actors)) + "</div>";
+      }
+      return h + "</div>";
+    }
 
     function renderDetails(item) {
       if (!$detailsContainer) {
@@ -368,41 +637,17 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         setBackground(null);
         return;
       }
-      var h = '<div class="prodTitle">' + util.text(item.title) + "</div>";
-      h += '<div class="prodSinopsis">' + util.text(item.sinopsis) + "</div>";
-      if (!util.isEmpty(item.audience)) {
-        h += '<div class="prodAudience">' + util.text(item.audience) + "</div>";
-      }
-      if (!util.isEmpty(item.duration)) {
-        h += '<div class="prodDuration">' + util.text(item.duration) + " minutos</div>";
-      }
-      if (!util.isEmpty(item.year)) {
-        h += '<div class="prodYear">' + util.text(item.year) + "</div>";
-      }
-      if (!util.isEmpty(item.imdb)) {
-        h += '<div class="prodIMDB highlight">IMDB: ' + util.text(item.imdb) + "</div>";
-      }
-      h += '<div style="clear:both"><br></div>';
-      if (!util.isEmpty(item.genres)) {
-        h +=
-          '<div class="prodGenres"><span class="highlight">Géneros:</span> ' +
-          util.text(util.joinList(item.genres)) +
-          "</div>";
-      }
-      if (!util.isEmpty(item.director)) {
-        h +=
-          '<div class="prodDirector"><span class="highlight">Director:</span> ' +
-          util.text(util.joinList(item.director)) +
-          "</div>";
-      }
-      if (!util.isEmpty(item.actors)) {
-        h +=
-          '<div class="prodActors"><span class="highlight">Elenco:</span> ' +
-          util.text(util.joinList(item.actors)) +
-          "</div><br>";
-      }
-      $detailsContainer.html(h);
-      setBackground(item.poster);
+      var h = '<div class="xd-title">' + util.text(item.title) + "</div>";
+      h += metaHtml(item);
+      h += '<div class="xd-syn">' + util.text(item.sinopsis) + "</div>";
+      h += creditsHtml(item, true);
+      var el = $detailsContainer.get(0);
+      el.innerHTML = h;
+      // Fundido corto del texto
+      $detailsContainer.removeClass("in");
+      void el.offsetWidth;
+      $detailsContainer.addClass("in");
+      setBackground(item);
     }
 
     /* ======================================================================
@@ -415,6 +660,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     function syncFocusClass() {
+      var s = active();
       var el = currentBox();
       if (lastFocusedEl && lastFocusedEl !== el) {
         $(lastFocusedEl).removeClass("onFocus activeContent");
@@ -445,10 +691,27 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       syncFocusClass();
       renderDetails(s.currentItem());
+      prefetchAround(row);
       ensureImages(row);
       if (s.rows.length > 1) {
         ensureImages(s.rows[(s.rowIndex + 1) % s.rows.length]);
       }
+    }
+
+    function sectionOf(name) {
+      var s = screens[name];
+      if (name === "list" && s && s.meta) {
+        if (s.meta.type === "students") {
+          return "alumnos";
+        }
+        if (s.meta.type === "genre") {
+          return "explorar";
+        }
+        if (s.meta.type === "search") {
+          return "buscar";
+        }
+      }
+      return name === "cineclub" ? "cineclub" : "home";
     }
 
     /* ======================================================================
@@ -470,6 +733,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       $grid.removeClass("cineclub specialContentSearch");
       if (s.gridClass) {
         $grid.addClass(s.gridClass);
+      }
+      $("body")
+        .removeClass("xtv-screen-home xtv-screen-cineclub xtv-screen-list")
+        .addClass("xtv-screen-" + name);
+      if (XTV.menu && XTV.menu.setCurrent) {
+        XTV.menu.setCurrent(sectionOf(name));
       }
       if (XTV.state.layer !== "grid") {
         XTV.setLayer("grid");
@@ -521,7 +790,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           }
           XTV.log.error("home", xhr, { offset: 0 });
           s.complete = true;
-          XTV.message.show("No pudimos cargar el contenido. Reintentamos en unos segundos.", 4000);
+          XTV.message.show("No pudimos cargar el contenido. Reintentamos en unos segundos.", 4000, null, "XC-APP-01");
           setTimeout(function () {
             if (gen === s.gen && activeName === "home" && !s.rows.length) {
               loadHome();
@@ -632,15 +901,15 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           }
           XTV.busy.end("cineclub");
           XTV.log.error("cineclub", xhr);
-          XTV.message.show("No pudimos cargar Cineclub. Probá de nuevo en unos minutos.");
+          XTV.message.show("No pudimos cargar Cineclub. Probá de nuevo en unos minutos.", 0, null, "XC-APP-02");
         });
     }
 
     var LIST_TYPES = {
       genre: { path: "genres", title: "" },
-      students: { path: "studentsOnly", title: "EXCLUSIVO PARA ALUMNOS" },
-      history: { path: "userHistory", title: "LO QUE YA VISTE" },
-      bookmark: { path: "userBookmark", title: "MI SELECCIÓN" },
+      students: { path: "studentsOnly", title: "Exclusivo para alumnos" },
+      history: { path: "userHistory", title: "Lo que ya viste" },
+      bookmark: { path: "userBookmark", title: "Mi selección" },
       search: { path: "search", title: "" }
     };
 
@@ -661,11 +930,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       var titleHtml = null;
       if (opts.type === "genre") {
         query = { genreId: opts.genreId };
-        title = String(opts.genreName || "").toUpperCase();
+        title = String(opts.genreName || "");
       } else if (opts.type === "search") {
-        var terms = String(opts.terms || "").toUpperCase();
-        query = { searchTerms: terms };
-        titleHtml = 'RESULTADOS PARA <span class="searchTerms">' + util.esc(terms) + "</span>";
+        var terms = String(opts.terms || "");
+        query = { searchTerms: terms.toUpperCase() };
+        titleHtml = 'Resultados para <span class="xr-hl">' + util.esc(terms) + "</span>";
       }
 
       XTV.busy.start("list", function () {
@@ -698,7 +967,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           }
           XTV.busy.end("list");
           XTV.log.error("list-" + opts.type, xhr, { query: query });
-          XTV.message.show("No pudimos cargar el contenido. Probá de nuevo en unos minutos.");
+          XTV.message.show("No pudimos cargar el contenido. Probá de nuevo en unos minutos.", 0, null, "XC-APP-02");
         });
     }
 
@@ -710,9 +979,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         msg = "Todavía no agregaste ninguna película a tu selección. Cuando las agregues podrás encontrarlas aquí y verlas cuando quieras.";
       } else if (opts.type === "search") {
         XTV.modal.confirm({
-          message: "No se encuentra el texto buscado: " + opts.terms + ". ¿Querés realizar una nueva búsqueda?",
-          yes: "SÍ",
-          no: "NO",
+          message: "No encontramos resultados para “" + opts.terms + "”. ¿Querés hacer otra búsqueda?",
+          yes: "Buscar de nuevo",
+          no: "Cancelar",
           focusYes: true,
           onYes: function () {
             XTV.search.open(opts.terms);
@@ -756,9 +1025,14 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Acciones sobre el póster con foco
      * ==================================================================== */
+    function currentItem() {
+      var s = active();
+      return s ? s.currentItem() : null;
+    }
+
     function openCurrent() {
       var s = active();
-      var item = s ? s.currentItem() : null;
+      var item = currentItem();
       if (item) {
         XTV.actions.openMovie(item, { screen: activeName, listType: s.meta && s.meta.type });
       }
@@ -775,7 +1049,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       var next = row.col + delta;
       if (next < 0) {
-        XTV.menu.open(0);
+        XTV.menu.open();
         return;
       }
       if (next > row.items.length - 1) {
@@ -808,7 +1082,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     function handleKey(action) {
-      var s = active();
       switch (action) {
         case "LEFT":
           moveHorizontal(-1);
@@ -827,8 +1100,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return true;
         case "PLAY":
         case "PLAYPAUSE":
-          if (s && s.currentItem()) {
-            XTV.player.play(s.currentItem());
+          if (currentItem()) {
+            XTV.player.play(currentItem());
           }
           return true;
         case "BACK":
@@ -852,19 +1125,24 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       activeName: function () {
         return activeName;
       },
-      currentItem: function () {
-        var s = active();
-        return s ? s.currentItem() : null;
-      },
+      currentItem: currentItem,
       refocus: function () {
+        if (activeName) {
+          $("body").removeClass("xtv-screen-home xtv-screen-cineclub xtv-screen-list").addClass("xtv-screen-" + activeName);
+          if (XTV.menu && XTV.menu.setCurrent) {
+            XTV.menu.setCurrent(sectionOf(activeName));
+          }
+        }
         focusChanged(false);
-      }
+      },
+      metaHtml: metaHtml,
+      creditsHtml: creditsHtml,
+      bigPoster: bigPoster
     };
   })(window.jQuery, window.XTV);
 
   /*
-   * Xiclos TV v2 - acciones: ficha de película, Mi lista, géneros,
-   * salir y cerrar sesión.
+   * Xiclos TV v2 - acciones: ficha de película, Mi lista, salir y cerrar sesión.
    * ES5 puro.
    */
   (function ($, XTV) {
@@ -875,62 +1153,92 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var modal = XTV.modal;
 
     /* ======================================================================
-     * Ficha de película (VER AHORA / MI LISTA)
+     * Ficha de película (tarjeta centrada)
      * ==================================================================== */
     function openMovie(item, context) {
       var gen = ++openMovie.gen;
       XTV.busy.start("movie", function () {
         XTV.api.abort("movie");
       });
+      // En paralelo: si está en Mi lista y si ya se empezó a ver
+      var resume = XTV.player.lookupResume ? XTV.player.lookupResume(item) : $.Deferred().resolve(null).promise();
+      function show(bookmarked, canBookmark) {
+        resume.done(function (r) {
+          if (gen !== openMovie.gen) {
+            return;
+          }
+          XTV.busy.end("movie");
+          showMovieModal(item, context, bookmarked, canBookmark, r);
+        });
+      }
       XTV.api
         .get(P.checkBookmark, { movieid: item.movieId }, "movie")
         .done(function (res) {
           if (gen !== openMovie.gen) {
             return;
           }
-          XTV.busy.end("movie");
           var data = res && res.data;
-          var bookmarked = !!(data && data[0] && String(data[0].bookmark) === "1");
-          showMovieModal(item, context, bookmarked, true);
+          show(!!(data && data[0] && String(data[0].bookmark) === "1"), true);
         })
         .fail(function (xhr, textStatus) {
           if (XTV.api.isAbort(xhr, textStatus) || gen !== openMovie.gen) {
             return;
           }
-          XTV.busy.end("movie");
           XTV.log.error("checkBookmark", xhr, { movieId: item.movieId });
           // Sin el estado de Mi lista igual se puede ver la película
-          showMovieModal(item, context, false, false);
+          show(false, false);
         });
     }
     openMovie.gen = 0;
 
-    function bookmarkLabel(bookmarked) {
-      return bookmarked ? "QUITAR DE MI LISTA" : "AGREGAR A MI LISTA";
+    function setBookmarkButton($b, bookmarked) {
+      $b.empty()
+        .append(XTV.icon(bookmarked ? "check" : "plus", "xm-btn-icon"))
+        .append($("<span></span>").text(bookmarked ? "En Mi lista" : "Agregar a Mi lista"))
+        .toggleClass("bookmarked", bookmarked);
     }
 
-    function showMovieModal(item, context, bookmarked, canBookmark) {
+    // resume: { seconds } si la película ya se empezó a ver (seconds puede ser 0
+    // si solo se sabe que está en "Lo que ya viste"), o null
+    function showMovieModal(item, context, bookmarked, canBookmark, resume) {
       var changed = false;
       var saving = false;
-      var $el = $('<div id="modalConfirmAction" class="modal"></div>');
-      var $confirm = $('<p id="confirm" class="bookmarkModal"></p>');
-      var poster = String(item.poster || "").replace("-205x347", "");
+      var sh = modal.shell("modalConfirmAction", "xm-movie");
+      var poster = XTV.grid.bigPoster(item.poster);
+      var $poster = $('<div class="xm-poster"></div>');
       if (poster) {
-        $confirm.append($('<img alt="">').attr("src", poster));
+        $poster.append($('<img alt="">').attr("src", poster));
       }
-      $confirm.append($('<p class="moviename"></p>').text(util.plain(item.title)));
-      var $play = $('<button id="playMovie" class="confirmField bookmarkButton"></button>').text(
-        "VER AHORA"
-      );
-      $confirm.append($play);
+      var $info = $('<div class="xm-info"></div>');
+      if (resume) {
+        var eyebrow = "Continuar viendo";
+        var total = (parseFloat(item.duration) || 0) * 60;
+        if (resume.seconds > 0 && total > resume.seconds) {
+          eyebrow += " · quedan " + Math.max(1, Math.round((total - resume.seconds) / 60)) + " min";
+        }
+        $info.append($('<div class="xm-eyebrow"></div>').text(eyebrow));
+      }
+      $info.append($('<div class="xm-title"></div>').text(util.plain(item.title)));
+      $info.append(XTV.grid.metaHtml(item));
+      $info.append($('<div class="xm-syn"></div>').text(util.plain(item.sinopsis)));
+      $info.append(XTV.grid.creditsHtml(item, false));
+      var $actions = $('<div class="xm-actions"></div>');
+      var $play = modal.button(resume ? "Seguir viendo" : "Ver ahora", true, "play");
+      $actions.append($play);
+      var $start = null;
+      if (resume) {
+        $start = modal.button("Desde el principio", false, "restart");
+        $actions.append($start);
+      }
       var $bookmark = null;
       if (canBookmark) {
-        $bookmark = $('<button id="manageBookmark" class="confirmField bookmarkButton"></button>')
-          .text(bookmarkLabel(bookmarked))
-          .toggleClass("bookmarked", bookmarked);
-        $confirm.append($bookmark);
+        $bookmark = $('<button type="button" class="xm-btn"></button>');
+        setBookmarkButton($bookmark, bookmarked);
+        $actions.append($bookmark);
       }
-      $el.append($confirm);
+      $info.append($actions);
+      sh.$card.append($poster).append($info);
+      sh.$el.append('<div class="xm-hint">Volver para cerrar</div>');
 
       function toggleBookmark() {
         if (saving) {
@@ -949,7 +1257,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             bookmarked = !bookmarked;
             changed = true;
             if ($bookmark) {
-              $bookmark.text(bookmarkLabel(bookmarked)).toggleClass("bookmarked", bookmarked);
+              setBookmarkButton($bookmark, bookmarked);
             }
           })
           .fail(function (xhr, textStatus) {
@@ -957,7 +1265,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
               return;
             }
             XTV.log.error("setBookmark", xhr, { movieId: item.movieId });
-            XTV.message.show("No pudimos actualizar tu lista. Probá de nuevo en unos minutos.");
+            XTV.message.show("No pudimos actualizar tu lista. Probá de nuevo en unos minutos.", 0, null, "XC-APP-03");
           })
           .always(function () {
             saving = false;
@@ -966,13 +1274,16 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
 
       modal.open({
-        $el: $el,
-        items: ".confirmField",
+        $el: sh.$el,
+        items: ".xm-btn",
         focus: $play.get(0),
         onActivate: function (el) {
           if (el === $play.get(0)) {
             modal.close(true);
             XTV.player.play(item);
+          } else if ($start && el === $start.get(0)) {
+            modal.close(true);
+            XTV.player.play(item, { fromStart: true });
           } else {
             toggleBookmark();
           }
@@ -995,66 +1306,13 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     /* ======================================================================
-     * Explorar por género
-     * ==================================================================== */
-    function genres() {
-      var gen = ++genres.gen;
-      XTV.busy.start("genres", function () {
-        XTV.api.abort("genres");
-      });
-      XTV.api
-        .get(P.genresList, { type: "Género" }, "genres")
-        .done(function (res) {
-          if (gen !== genres.gen) {
-            return;
-          }
-          XTV.busy.end("genres");
-          var data = (res && res.data) || [];
-          if (!data.length) {
-            modal.alert({ message: "No hay géneros disponibles en este momento." });
-            return;
-          }
-          var $el = $('<div id="modalGenreList" class="modal"></div>');
-          modal.decorate($el);
-          $el.append('<p class="moviename">EXPLORAR POR GÉNERO</p>');
-          var $confirm = $('<p id="confirm" class="bookmarkGenreList"></p>');
-          for (var i = 0; i < data.length; i++) {
-            $confirm.append(
-              $('<button class="confirmField genreList"></button>')
-                .text(util.plain(data[i].genre).toUpperCase())
-                .attr("data-index", i)
-            );
-          }
-          $el.append($confirm);
-          modal.open({
-            $el: $el,
-            items: ".confirmField",
-            onActivate: function (el) {
-              var g = data[parseInt($(el).attr("data-index"), 10)];
-              modal.close(true);
-              XTV.grid.showList({ type: "genre", genreId: g.genreId, genreName: util.plain(g.genre) });
-            }
-          });
-        })
-        .fail(function (xhr, textStatus) {
-          if (XTV.api.isAbort(xhr, textStatus) || gen !== genres.gen) {
-            return;
-          }
-          XTV.busy.end("genres");
-          XTV.log.error("genresList", xhr);
-          XTV.message.show("No pudimos cargar los géneros. Probá de nuevo en unos minutos.");
-        });
-    }
-    genres.gen = 0;
-
-    /* ======================================================================
      * Salir y cerrar sesión
      * ==================================================================== */
     function confirmExit() {
       modal.confirm({
-        message: "¿Realmente querés cerrar Xiclos?",
+        message: "¿Querés cerrar Xiclos?",
         onYes: function () {
-          XTV.platform.exit();
+          XTV.app.quit();
         }
       });
     }
@@ -1062,7 +1320,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     function confirmLogout() {
       modal.confirm({
         message:
-          "¿Realmente querés cerrar tu sesión en Xiclos? Si cerrás tu sesión deberás volver a sincronizar tu dispositivo para disfrutar Xiclos nuevamente.",
+          "¿Querés cerrar tu sesión? Vas a tener que volver a sincronizar este dispositivo para usar Xiclos.",
         onYes: function () {
           XTV.login.logout();
         }
@@ -1071,9 +1329,332 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
     XTV.actions = {
       openMovie: openMovie,
-      genres: genres,
+      genres: function () {
+        XTV.browse.open();
+      },
       confirmExit: confirmExit,
       confirmLogout: confirmLogout
+    };
+  })(window.jQuery, window.XTV);
+
+  /*
+   * Xiclos TV v2 - Explorar
+   * Pantalla propia (capa "browse") con la grilla de géneros y, al elegir
+   * uno, la grilla de sus películas. Navegación lineal: derecha/izquierda
+   * avanzan en orden y pasan de fila; arriba/abajo saltan una fila.
+   * Izquierda en el primer elemento abre el menú.
+   * ES5 puro.
+   */
+  (function ($, XTV) {
+    "use strict";
+
+    var P = XTV.paths;
+    var util = XTV.util;
+
+    var $root = null;
+    var $body = null;
+    var st = { view: "genres", genres: [], movies: [], genre: null, focus: 0, genreFocus: 0, gen: 0, open: false };
+
+    function build() {
+      $root = $(
+        '<div id="xtvBrowse"><div class="xbw-head"><div class="xbw-crumb"></div><div class="xbw-h1"></div></div><div class="xbw-view"><div class="xbw-body"></div></div></div>'
+      );
+      $body = $root.find(".xbw-body");
+      $root.on("mousemove", ".xbw-f", function () {
+        if (!XTV.pointer.isActive()) {
+          return;
+        }
+        var i = parseInt($(this).attr("data-i"), 10);
+        if (i !== st.focus) {
+          setFocus(i);
+        }
+      });
+      $root.on("click", ".xbw-f", function () {
+        setFocus(parseInt($(this).attr("data-i"), 10));
+        activate();
+      });
+    }
+
+    function items() {
+      return $body ? $body.find(".xbw-f").get() : [];
+    }
+
+    function cols() {
+      var list = items();
+      if (!list.length) {
+        return 1;
+      }
+      var top = list[0].offsetTop;
+      var n = 0;
+      while (n < list.length && list[n].offsetTop === top) {
+        n++;
+      }
+      return Math.max(1, n);
+    }
+
+    function setShift(px) {
+      var el = $body.get(0);
+      var v = "translateY(" + Math.round(-px) + "px)";
+      el.style.webkitTransform = v;
+      el.style.transform = v;
+      $body.data("shift", px);
+    }
+
+    function ensureVisible(el) {
+      var shift = $body.data("shift") || 0;
+      var top = el.offsetTop;
+      var h = el.offsetHeight;
+      var viewH = $body.parent().get(0).clientHeight;
+      if (top - shift < 0) {
+        setShift(Math.max(0, top - 10));
+      } else if (top + h - shift > viewH) {
+        setShift(top + h - viewH + 10);
+      }
+    }
+
+    function loadPosters(upTo) {
+      var imgs = $body.find(".xbw-movie img").get();
+      for (var i = 0; i < imgs.length && i <= upTo + 14; i++) {
+        if (!imgs[i].getAttribute("src") && st.movies[i] && st.movies[i].poster) {
+          imgs[i].onload = function () {
+            this.className = "ok";
+          };
+          imgs[i].setAttribute("src", st.movies[i].poster);
+        }
+      }
+    }
+
+    function setFocus(i) {
+      var list = items();
+      if (!list.length) {
+        return;
+      }
+      i = Math.max(0, Math.min(list.length - 1, i));
+      $(list[st.focus]).removeClass("onFocus");
+      st.focus = i;
+      $(list[i]).addClass("onFocus");
+      ensureVisible(list[i]);
+      if (st.view === "movies") {
+        loadPosters(i);
+      }
+    }
+
+    function header(crumb, title) {
+      $root.find(".xbw-crumb").text(crumb || "");
+      $root.find(".xbw-h1").text(title);
+    }
+
+    function renderGenres() {
+      st.view = "genres";
+      header("", "Explorar");
+      var h = '<div class="xbw-genres">';
+      for (var i = 0; i < st.genres.length; i++) {
+        h +=
+          '<button type="button" class="xbw-genre xbw-f" data-i="' +
+          i +
+          '"><span class="xbw-accent"></span><span class="xbw-gname">' +
+          util.text(st.genres[i].genre) +
+          "</span></button>";
+      }
+      $body.html(h + "</div>");
+      setShift(0);
+      st.focus = 0;
+      setFocus(st.genreFocus);
+    }
+
+    function renderMovies() {
+      st.view = "movies";
+      header("Explorar ›", util.plain(st.genre.genre));
+      var h = '<div class="xbw-movies">';
+      for (var i = 0; i < st.movies.length; i++) {
+        h +=
+          '<div class="xbw-movie xbw-f" data-i="' +
+          i +
+          '"><div class="xbw-ph"><img alt=""></div><div class="xbw-t">' +
+          util.text(st.movies[i].title) +
+          "</div></div>";
+      }
+      $body.html(h + "</div>");
+      setShift(0);
+      st.focus = 0;
+      setFocus(0);
+    }
+
+    function show() {
+      $("body").append($root);
+      st.open = true;
+      XTV.setLayer("browse");
+      if (XTV.menu && XTV.menu.setCurrent) {
+        XTV.menu.setCurrent("explorar");
+      }
+    }
+
+    function open() {
+      if (!$root) {
+        build();
+      }
+      var gen = ++st.gen;
+      if (st.genres.length) {
+        show();
+        st.genreFocus = 0;
+        renderGenres();
+        return;
+      }
+      XTV.busy.start("genres", function () {
+        XTV.api.abort("genres");
+      });
+      XTV.api
+        .get(P.genresList, { type: "Género" }, "genres")
+        .done(function (res) {
+          if (gen !== st.gen) {
+            return;
+          }
+          XTV.busy.end("genres");
+          var data = (res && res.data) || [];
+          if (!data.length) {
+            XTV.modal.alert({ message: "No hay géneros disponibles en este momento." });
+            return;
+          }
+          st.genres = data;
+          st.genreFocus = 0;
+          show();
+          renderGenres();
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== st.gen) {
+            return;
+          }
+          XTV.busy.end("genres");
+          XTV.log.error("genresList", xhr);
+          XTV.message.show("No pudimos cargar los géneros. Probá de nuevo en unos minutos.", 0, null, "XC-APP-02");
+        });
+    }
+
+    function openGenre(g) {
+      var gen = ++st.gen;
+      XTV.busy.start("genre", function () {
+        XTV.api.abort("browse");
+      });
+      XTV.api
+        .get(P.genres, { genreId: g.genreId }, "browse")
+        .done(function (res) {
+          if (gen !== st.gen) {
+            return;
+          }
+          XTV.busy.end("genre");
+          var data = (res && res.data) || [];
+          if (!data.length) {
+            XTV.modal.alert({ message: "No encontramos películas de este género." });
+            return;
+          }
+          st.genre = g;
+          st.movies = data;
+          renderMovies();
+        })
+        .fail(function (xhr, textStatus) {
+          if (XTV.api.isAbort(xhr, textStatus) || gen !== st.gen) {
+            return;
+          }
+          XTV.busy.end("genre");
+          XTV.log.error("genres", xhr, { genreId: g.genreId });
+          XTV.message.show("No pudimos cargar este género. Probá de nuevo en unos minutos.", 0, null, "XC-APP-02");
+        });
+    }
+
+    function close(toMenu) {
+      st.gen++;
+      XTV.api.abort("browse");
+      st.open = false;
+      if ($root) {
+        $root.detach();
+      }
+      if (XTV.state.layer === "browse") {
+        XTV.setLayer("grid");
+        XTV.grid.refocus();
+      }
+      if (toMenu) {
+        XTV.menu.open();
+      }
+    }
+
+    function activate() {
+      if (st.view === "genres") {
+        st.genreFocus = st.focus;
+        openGenre(st.genres[st.focus]);
+      } else {
+        var item = st.movies[st.focus];
+        if (item) {
+          XTV.actions.openMovie(item, { screen: "browse" });
+        }
+      }
+    }
+
+    function handleKey(action) {
+      var list = items();
+      var n = list.length;
+      var c = cols();
+      var i = st.focus;
+      switch (action) {
+        case "RIGHT":
+          if (i < n - 1) {
+            setFocus(i + 1);
+          }
+          return true;
+        case "LEFT":
+          if (i > 0) {
+            setFocus(i - 1);
+          } else {
+            close(true);
+          }
+          return true;
+        case "DOWN":
+          if (i + c < n) {
+            setFocus(i + c);
+          } else if (Math.floor(i / c) < Math.floor((n - 1) / c)) {
+            setFocus(n - 1);
+          }
+          return true;
+        case "UP":
+          if (i - c >= 0) {
+            setFocus(i - c);
+          }
+          return true;
+        case "OK":
+          activate();
+          return true;
+        case "PLAY":
+        case "PLAYPAUSE":
+          if (st.view === "movies" && st.movies[i]) {
+            XTV.player.play(st.movies[i]);
+          }
+          return true;
+        case "BACK":
+          if (st.view === "movies") {
+            renderGenres();
+          } else {
+            close(false);
+          }
+          return true;
+      }
+      return false;
+    }
+
+    XTV.browse = {
+      open: open,
+      close: close,
+      handleKey: handleKey,
+      isOpen: function () {
+        return st.open;
+      },
+      refocus: function () {
+        var list = items();
+        if (list[st.focus]) {
+          $(list[st.focus]).addClass("onFocus");
+        }
+        if (XTV.menu && XTV.menu.setCurrent) {
+          XTV.menu.setCurrent("explorar");
+        }
+      }
     };
   })(window.jQuery, window.XTV);
 }

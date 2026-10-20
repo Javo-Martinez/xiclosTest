@@ -2071,277 +2071,1611 @@ li {
 }
 
 /* ===== Xiclos TV v2 =====
- * Agregado para la v2. La app de Amazon no carga este archivo.
+ * Diseño v2. La app de Amazon no carga este archivo.
+ * Todo va bajo body.xtv para no chocar con los estilos anteriores.
+ * Medidas en vw: el diseño se pensó a 1280 px de ancho (1 px = 0,078125 vw),
+ * así se ve igual en 1280x720 y en 1920x1080.
+ * Solo se animan transform y opacity (fluido en TVs de 2017).
  * ===================================================================== */
 
-/* ---------------------------------------------------------------
- * Compatibilidad con TVs 2017-2018 (Chromium 38 a 56)
- * --------------------------------------------------------------- */
+body.xtv {
+  background: #0E0E10 !important;
+  color: #F4F4F5;
+  font-family: Roboto, Arial, sans-serif;
+}
 
-/* El menú usaba display: grid (Chromium 57+). Con flex en columna y
-   space-around se obtiene la misma distribución de íconos. */
-#newMenu {
+/* ---------------------------------------------------------------
+ * Marca: triángulo de esquina con el logo pisando la diagonal
+ * (la X sobre la imagen, "iclos" sobre el rojo). Escalan juntos.
+ * --------------------------------------------------------------- */
+body.xtv .trapezium,
+body.xtv .trapezium2 {
+  display: none !important;
+}
+body.xtv .triangle {
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-top: 14.1vw solid #EB564A !important;
+  border-left: 14.1vw solid transparent !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  z-index: 45;
+}
+body.xtv #result {
+  display: block !important;
+  position: absolute !important;
+  top: 3.3vw !important;
+  right: 2.8vw !important;
+  left: auto !important;
+  margin: 0 !important;
+  z-index: 45;
+}
+body.xtv #result img {
+  display: block !important;
+  height: 4.8vw !important;
+  width: auto !important;
+  /* Sombra suave para que la parte que cae sobre la imagen se lea igual */
+  -webkit-filter: drop-shadow(0 0.08vw 0.16vw rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 0.08vw 0.16vw rgba(0, 0, 0, 0.45));
+}
+
+/* ---------------------------------------------------------------
+ * Fondo: afiche a color con degradados de lectura (sin blur)
+ * --------------------------------------------------------------- */
+body.xtv #mainContainer {
+  display: block !important;
+  position: absolute !important;
+  top: 0;
+  right: 0;
+  left: auto;
+  width: 70.3125vw !important;
+  height: 39.0625vw !important;
+  background: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  overflow: hidden;
+  z-index: 0;
+}
+body.xtv .xb-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease;
+}
+/* Las capas del fondo llevan la imagen ya cargada como <img> */
+body.xtv .xb-layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+/* Imagen horizontal (la del sitio web): centrada */
+body.xtv .xb-layer.wide img {
+  object-position: center center;
+}
+body.xtv .xb-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #0E0E10 0%, rgba(14, 14, 16, 0.92) 22%, rgba(14, 14, 16, 0.6) 55%, rgba(14, 14, 16, 0.3) 100%);
+}
+body.xtv .xb-scrim:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52%;
+  background: linear-gradient(180deg, rgba(14, 14, 16, 0) 0%, #0E0E10 100%);
+}
+
+/* ---------------------------------------------------------------
+ * Detalle de la película con foco
+ * --------------------------------------------------------------- */
+body.xtv #mainContent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+body.xtv #xtvHeader {
+  position: absolute;
+  left: 9.375vw;
+  top: 5.625vw;
+  width: 46.875vw;
+}
+body.xtv .xd.in {
+  -webkit-animation: xtvFade 0.15s ease-out;
+  animation: xtvFade 0.15s ease-out;
+}
+@-webkit-keyframes xtvFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes xtvFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+body.xtv .xd-title {
+  font-size: 2.97vw;
+  font-weight: 500;
+  letter-spacing: -0.04vw;
+  line-height: 1.1;
+  margin-bottom: 1.1vw;
+}
+body.xtv .xd-meta {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  font-size: 1.094vw;
+  color: #B4B4BB;
+  margin-bottom: 1.1vw;
+}
+body.xtv .xd-meta span {
+  margin-right: 0.94vw;
+}
+body.xtv .xd-age {
+  border: 0.078vw solid #6B6B73;
+  border-radius: 0.2vw;
+  padding: 0.08vw 0.47vw;
+  font-size: 0.94vw;
+  color: #D4D4D8;
+}
+body.xtv .xd-dot {
+  color: #55555C;
+}
+body.xtv .xd-syn {
+  font-size: 1.25vw;
+  font-weight: 300;
+  line-height: 1.55;
+  color: #D4D4D8;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 5.82vw;
+  margin-bottom: 1.1vw;
+}
+body.xtv .xd-credits {
+  font-size: 1.016vw;
+  color: #B4B4BB;
+  line-height: 1.6;
+}
+body.xtv .xd-credits div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.xtv .xd-lbl {
+  color: #8A8A93;
+  margin-right: 0.6vw;
+}
+
+/* ---------------------------------------------------------------
+ * Tiras y afiches
+ * --------------------------------------------------------------- */
+/* El borde izquierdo del recorte queda 0.8vw antes del primer afiche: así
+ * el afiche con foco (escala 1.06) no se corta. */
+body.xtv #xtvGrid {
+  position: absolute;
+  left: 8.575vw;
+  padding-left: 0.8vw;
+  top: 31.5625vw;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+body.xtv .xr-row {
+  height: 20vw;
+  opacity: 0.6;
+}
+body.xtv .xr-row:first-child {
+  opacity: 1;
+}
+body.xtv .xr-title {
+  font-size: 1.25vw;
+  font-weight: 500;
+  color: #B4B4BB;
+  height: 1.7vw;
+  line-height: 1.7vw;
+  margin-bottom: 1vw;
+  white-space: nowrap;
+}
+body.xtv .xr-row:first-child .xr-title {
+  color: #F4F4F5;
+}
+body.xtv .xr-sub {
+  color: #8A8A93;
+  font-weight: 400;
+}
+body.xtv .xr-hl {
+  color: #EB564A;
+}
+body.xtv .xr-track {
+  white-space: nowrap;
+  -webkit-transition: -webkit-transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.xtv .xr-item {
+  display: inline-block;
+  vertical-align: top;
+  width: 10.3125vw;
+  margin-right: 1.25vw;
+  -webkit-transform-origin: center top;
+  transform-origin: center top;
+  -webkit-transition: -webkit-transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.xtv .xr-row:first-child .xr-item {
+  opacity: 0.82;
+}
+body.xtv .xr-poster {
+  position: relative;
+  width: 100%;
+  height: 15.47vw;
+  border-radius: 0.25vw;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+body.xtv .xr-poster img,
+body.xtv .xbw-ph img,
+body.xtv .xs-movie img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  -webkit-transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease;
+}
+body.xtv .xr-poster img.ok,
+body.xtv .xbw-ph img.ok,
+body.xtv .xs-movie img.ok {
+  opacity: 1;
+}
+/* Borde de foco por dentro del afiche: nunca se recorta */
+body.xtv .xr-poster:after,
+body.xtv .xbw-ph:after,
+body.xtv .xs-movie .ph:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0.25vw;
+  box-shadow: inset 0 0 0 0.234vw transparent;
+}
+body.xtv .xr-item.onFocus {
+  opacity: 1 !important;
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+}
+body.xtv .xr-item.onFocus .xr-poster:after,
+body.xtv .xbw-movie.onFocus .xbw-ph:after,
+body.xtv .xs-movie.onFocus .ph:after {
+  box-shadow: inset 0 0 0 0.234vw #EB564A;
+}
+
+/* ---------------------------------------------------------------
+ * Botones
+ * --------------------------------------------------------------- */
+body.xtv .xm-btn {
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 3.5vw;
+  padding: 0 1.75vw;
+  margin-right: 0.94vw;
+  border: 0.078vw solid #3A3A42;
+  border-radius: 0.25vw;
+  background: transparent;
+  color: #D4D4D8;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 1.2vw;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  -webkit-transition: -webkit-transform 0.12s ease-out;
+  transition: transform 0.12s ease-out;
+}
+body.xtv .xm-btn.primary {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #FFFFFF;
+  font-weight: 500;
+}
+body.xtv .xm-btn.onFocus {
+  background: #D23F35;
+  border-color: #D23F35;
+  color: #FFFFFF;
+  -webkit-transform: scale(1.04);
+  transform: scale(1.04);
+}
+body.xtv .xm-btn-icon {
+  width: 1.3vw;
+  height: 1.3vw;
+  margin-right: 0.7vw;
+}
+
+/* ---------------------------------------------------------------
+ * Modales: tarjeta centrada sobre el fondo oscurecido
+ * --------------------------------------------------------------- */
+body.xtv .xm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 60;
+  background: rgba(8, 8, 10, 0.82);
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  font-family: Roboto, Arial, sans-serif;
+  -webkit-animation: xtvFade 0.15s ease-out;
+  animation: xtvFade 0.15s ease-out;
+}
+body.xtv .xm-card {
+  box-sizing: border-box;
+  padding: 2.5vw;
+  border-radius: 0.25vw;
+  background: #18181B;
+  border: 0.078vw solid #2E2E34;
+  color: #F4F4F5;
+}
+body.xtv .xm-small {
+  width: 43.75vw;
+  text-align: center;
+}
+body.xtv .xm-message {
+  margin: 0 0 2vw;
+  font-size: 1.5vw;
+  line-height: 1.45;
+  font-weight: 400;
+}
+body.xtv .xm-actions {
+  display: -webkit-flex;
+  display: flex;
+}
+body.xtv .xm-small .xm-actions {
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+body.xtv .xm-small .xm-btn {
+  margin: 0 0.47vw;
+}
+body.xtv .xm-movie {
+  display: -webkit-flex;
+  display: flex;
+  width: 68.75vw;
+  height: 32.8vw;
+}
+body.xtv .xm-poster {
+  -webkit-flex: none;
+  flex: none;
+  width: 18.44vw;
+  height: 27.66vw;
+  margin-right: 2.8vw;
+  border-radius: 0.25vw;
+  overflow: hidden;
+  background: #232328;
+}
+body.xtv .xm-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+body.xtv .xm-info {
+  -webkit-flex: 1;
+  flex: 1;
+  min-width: 0;
   display: -webkit-flex;
   display: flex;
   -webkit-flex-direction: column;
   flex-direction: column;
-  -webkit-justify-content: space-around;
-  justify-content: space-around;
-  -webkit-align-items: flex-start;
-  align-items: flex-start;
-  /* Colores de 8 dígitos (#000000d6) no existen antes de Chromium 62 */
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.84) 85%, rgba(0, 0, 0, 0) 100%);
 }
-
-.newMenuActive {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.93) 85%, rgba(0, 0, 0, 0) 100%) !important;
+body.xtv .xm-title {
+  font-size: 2.5vw;
+  font-weight: 500;
+  line-height: 1.1;
+  margin-bottom: 1vw;
 }
-
-@media only screen and (max-width: 1280px) {
-  #newMenu {
-    display: -webkit-flex;
-    display: flex;
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.84) 85%, rgba(0, 0, 0, 0) 100%);
-  }
+body.xtv .xm-syn {
+  font-size: 1.17vw;
+  font-weight: 300;
+  line-height: 1.55;
+  color: #D4D4D8;
+  margin-bottom: 1vw;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 9.1vw;
 }
-
-.modalTrapezium2 {
-  border-color: rgba(33, 31, 31, 0.69) rgba(68, 23, 23, 0) !important;
+body.xtv .xm-info .xm-actions {
+  margin-top: auto;
 }
-
-/* width: max-content no existe antes de Chromium 46 (el JS además fija
-   el ancho de cada tira). */
-.content {
-  width: -webkit-max-content;
-  width: max-content;
+/* Tres botones (Seguir viendo, Desde el principio, Mi lista) en una fila */
+body.xtv .xm-movie .xm-btn {
+  padding: 0 1.25vw;
+  margin-right: 0.7vw;
 }
-
-/* ---------------------------------------------------------------
- * Navegación
- * --------------------------------------------------------------- */
-
-/* Desplazamiento de las tiras con transform (más liviano que margin) */
-.content {
-  -webkit-transition: -webkit-transform 0.15s ease-out;
-  transition: transform 0.15s ease-out;
+body.xtv .xm-eyebrow {
+  font-size: 0.94vw;
+  font-weight: 500;
+  letter-spacing: 0.117vw;
+  text-transform: uppercase;
+  color: #EB564A;
+  margin-bottom: 0.6vw;
 }
-
-/* Lugar reservado mientras carga el póster */
-.box .poster {
-  background-color: rgba(255, 255, 255, 0.06);
-}
-
-#mainContent .prodDetails {
-  display: block;
+body.xtv .xm-hint {
+  position: absolute;
+  left: 15.625vw;
+  bottom: 5.2vw;
+  font-size: 1.016vw;
+  color: #8A8A93;
 }
 
 /* ---------------------------------------------------------------
- * Búsqueda predictiva (#xtvSearch)
- * Medidas en vw para que se vea igual en 1920x1080 y 1280x720.
+ * Menú lateral
+ * Riel de íconos fijo y un panel que aparece con transform + opacity.
+ * El panel termina en un degradado: sin borde negro tajante.
  * --------------------------------------------------------------- */
-#xtvSearch {
+body.xtv #xtvMenu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  z-index: 40;
+  font-family: Roboto, Arial, sans-serif;
+}
+body.xtv .xn-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 56.25vw;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0.2) 100%);
+  opacity: 0;
+  pointer-events: none;
+  -webkit-transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease;
+}
+body.xtv #xtvMenu.open .xn-scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+body.xtv .xn-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5.625vw;
+  height: 56.25vw;
+  background: linear-gradient(90deg, rgba(14, 14, 16, 0.94) 0%, rgba(14, 14, 16, 0.82) 100%);
+}
+body.xtv .xn-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 31.25vw;
+  height: 56.25vw;
+  background: linear-gradient(90deg, rgba(16, 16, 20, 0.97) 0%, rgba(16, 16, 20, 0.93) 55%, rgba(16, 16, 20, 0.6) 80%, rgba(16, 16, 20, 0) 100%);
+  opacity: 0;
+  -webkit-transform: translateX(-6.25vw);
+  transform: translateX(-6.25vw);
+  -webkit-transition: opacity 0.2s ease, -webkit-transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.xtv #xtvMenu.open .xn-panel {
+  opacity: 1;
+  -webkit-transform: none;
+  transform: none;
+}
+body.xtv .xn-items {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 23.4375vw;
+  height: 56.25vw;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-justify-content: center;
+  justify-content: center;
+  pointer-events: none;
+}
+body.xtv .xn-item {
+  position: relative;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-flex: none;
+  flex: none;
+  width: 3.75vw;
+  height: 3.75vw;
+  margin: 0.234vw 0.9375vw;
+  padding: 0 0 0 0.9375vw;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0.25vw;
+  background: transparent;
+  color: #8A8A93;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  pointer-events: auto;
+}
+body.xtv #xtvMenu.open .xn-item {
+  width: 21.56vw;
+}
+body.xtv .xn-item.group {
+  margin-top: 3.125vw;
+}
+body.xtv .xn-icon {
+  -webkit-flex: none;
+  flex: none;
+  width: 1.875vw;
+  height: 1.875vw;
+}
+body.xtv .xn-label {
+  margin-left: 1.72vw;
+  font-size: 1.33vw;
+  color: #B4B4BB;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-transform: translateX(-0.625vw);
+  transform: translateX(-0.625vw);
+  -webkit-transition: opacity 0.12s ease, -webkit-transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 0.12s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.xtv #xtvMenu.open .xn-label {
+  opacity: 1;
+  -webkit-transform: none;
+  transform: none;
+  -webkit-transition-delay: 0.06s, 0s;
+  transition-delay: 0.06s, 0s;
+}
+body.xtv .xn-bar {
+  position: absolute;
+  left: -0.9375vw;
+  top: 0.78vw;
+  width: 0.234vw;
+  height: 2.19vw;
+  border-radius: 0.16vw;
+  background: #EB564A;
+  opacity: 0;
+  -webkit-transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease;
+}
+body.xtv .xn-item.current {
+  color: #F4F4F5;
+}
+body.xtv #xtvMenu:not(.open) .xn-item.current .xn-bar,
+body.xtv .xn-item.onFocus .xn-bar {
+  opacity: 1;
+}
+body.xtv .xn-item.onFocus {
+  background: rgba(255, 255, 255, 0.07);
+  color: #FFFFFF;
+}
+body.xtv .xn-item.onFocus .xn-label {
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------
+ * Video: solo el reproductor
+ * --------------------------------------------------------------- */
+body.xtv.xtv-layer-video #xtvMenu,
+body.xtv.xtv-layer-video #mainContent,
+body.xtv.xtv-layer-video #mainContainer,
+body.xtv.xtv-layer-video #xtvSearch,
+body.xtv.xtv-layer-video #xtvBrowse,
+body.xtv.xtv-layer-video .triangle,
+body.xtv.xtv-layer-video #result {
+  visibility: hidden !important;
+}
+body.xtv.xtv-layer-video #div_vimeo_player {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 450;
-  background: #1b1b1b;
-  color: #fff;
-  font-family: Roboto, Arial, sans-serif;
-  overflow: hidden;
+  z-index: 100;
+  background: #000000;
 }
-.xtv-layer-video #xtvSearch {
+/* Los controles del reproductor quedan ocultos: los reemplaza la barra
+ * propia (el botón de transmitir se acciona desde ahí). Los subtítulos
+ * no están dentro de los controles y se siguen viendo. */
+body.xtv #div_vimeo_player .jw-controls,
+body.xtv #div_vimeo_player .jw-display,
+body.xtv #div_vimeo_player .jw-controlbar {
+  display: none !important;
+}
+/* Con la barra visible, los subtítulos suben para no quedar tapados */
+body.xtv.xtv-player-ui #div_vimeo_player .jw-captions {
+  -webkit-transform: translateY(-9vw);
+  transform: translateY(-9vw);
+}
+
+body.xtv #xtvPlayerUI {
   display: none;
 }
-#xtvSearch .xs-left {
+body.xtv.xtv-layer-video #xtvPlayerUI.active {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 110;
+  pointer-events: none;
+  color: #F4F4F5;
+  font-family: Roboto, sans-serif;
+}
+/* La barra aparece y se va con un fundido; el aviso (toast) es aparte */
+body.xtv #xtvPlayerUI .xp-shade,
+body.xtv #xtvPlayerUI .xp-top,
+body.xtv #xtvPlayerUI .xp-bottom,
+body.xtv #xtvPlayerUI .xp-menu {
+  opacity: 0;
+  -webkit-transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease;
+}
+body.xtv #xtvPlayerUI.on .xp-shade,
+body.xtv #xtvPlayerUI.on .xp-top,
+body.xtv #xtvPlayerUI.on .xp-bottom,
+body.xtv #xtvPlayerUI.on .xp-menu {
+  opacity: 1;
+}
+body.xtv #xtvPlayerUI.on .xp-bottom,
+body.xtv #xtvPlayerUI.on .xp-menu {
+  pointer-events: auto;
+}
+body.xtv #xtvPlayerUI .xp-shade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.82) 100%);
+}
+body.xtv #xtvPlayerUI .xp-top {
+  position: absolute;
+  top: 3.1vw;
+  left: 6.25vw;
+  right: 6.25vw;
+}
+body.xtv #xtvPlayerUI .xp-title {
+  font-size: 1.88vw;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.xtv #xtvPlayerUI .xp-bottom {
+  position: absolute;
+  left: 6.25vw;
+  right: 6.25vw;
+  bottom: 3.4vw;
+}
+body.xtv #xtvPlayerUI .xp-bar {
+  position: relative;
+  padding: 1.1vw 0;
+}
+body.xtv #xtvPlayerUI .xp-track {
+  position: relative;
+  height: 0.31vw;
+  border-radius: 0.16vw;
+  background: rgba(255, 255, 255, 0.25);
+  -webkit-transition: -webkit-transform 0.15s ease;
+  transition: transform 0.15s ease;
+}
+body.xtv #xtvPlayerUI .xp-bar.onFocus .xp-track {
+  -webkit-transform: scaleY(1.6);
+  transform: scaleY(1.6);
+}
+body.xtv #xtvPlayerUI .xp-fill {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 34%;
-  padding: 4.2vw 2vw 0 3.2vw;
-  box-sizing: border-box;
-  background: #141414;
+  width: 0;
+  border-radius: 0.16vw;
+  background: #EB564A;
 }
-#xtvSearch .xs-title {
-  font-size: 1.4vw;
-  letter-spacing: 0.15vw;
-  color: #aaa;
-  margin-bottom: 1.2vw;
+body.xtv #xtvPlayerUI .xp-knob {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1.1vw;
+  height: 1.1vw;
+  margin: -0.55vw 0 0 -0.55vw;
+  border-radius: 50%;
+  background: #FFFFFF;
+  opacity: 0;
 }
-#xtvSearch .xs-input {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  background: #2a2a2a;
-  border: none;
-  border-bottom: 0.2vw solid #eb564a;
-  color: #fff;
-  font-size: 1.9vw;
-  height: 3.6vw;
-  padding: 0 1vw;
-  margin: 0 0 1.6vw 0;
-  font-family: Roboto, Arial, sans-serif;
-  letter-spacing: 0.1vw;
-  text-align: left;
-  text-indent: 0;
-  outline: none;
+body.xtv #xtvPlayerUI .xp-bar.onFocus .xp-knob {
+  opacity: 1;
+  -webkit-transform: scaleY(0.625);
+  transform: scaleY(0.625);
 }
-#xtvSearch .xs-input.ime {
-  background: #3a3a3a;
+body.xtv #xtvPlayerUI .xp-tip {
+  position: absolute;
+  bottom: 2.4vw;
+  left: 0;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  padding: 0.3vw 0.7vw;
+  border-radius: 0.25vw;
+  background: rgba(14, 14, 16, 0.9);
+  font-size: 1.1vw;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
 }
-#xtvSearch .xs-keys {
-  overflow: hidden;
+body.xtv #xtvPlayerUI .xp-tip.on {
+  opacity: 1;
 }
-#xtvSearch .xs-key {
-  float: left;
-  width: -webkit-calc(16.666% - 0.5vw);
-  width: calc(16.666% - 0.5vw);
-  margin: 0 0.5vw 0.5vw 0;
-  height: 3.1vw;
-  line-height: 3.1vw;
-  text-align: center;
-  background: #2e2e2e;
-  color: #ddd;
-  font-size: 1.35vw;
-  border-radius: 0.2vw;
+body.xtv #xtvPlayerUI .xp-row {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  margin-top: 0.6vw;
+}
+body.xtv #xtvPlayerUI .xp-btns {
+  display: -webkit-flex;
+  display: flex;
+  position: relative;
+}
+body.xtv #xtvPlayerUI .xp-btn {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 2.97vw;
+  padding: 0 1.1vw;
+  margin-right: 0.63vw;
+  border-radius: 0.25vw;
+  font-size: 1.1vw;
+  color: #D4D4D8;
+  background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
 }
-#xtvSearch .xs-key.w2 {
-  width: -webkit-calc(33.333% - 0.5vw);
-  width: calc(33.333% - 0.5vw);
+body.xtv #xtvPlayerUI .xp-btn.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
 }
-#xtvSearch .xs-key.w3 {
-  width: -webkit-calc(50% - 0.5vw);
-  width: calc(50% - 0.5vw);
+body.xtv #xtvPlayerUI .xp-icon {
+  display: inline-block;
+  width: 1.4vw;
+  height: 1.4vw;
+  margin-right: 0.55vw;
+  -webkit-flex: none;
+  flex: none;
 }
-#xtvSearch .xs-key.small {
-  font-size: 0.95vw;
-  letter-spacing: 0.05vw;
+body.xtv #xtvPlayerUI .xp-time {
+  font-size: 1.1vw;
+  color: #D4D4D8;
+  white-space: nowrap;
 }
-#xtvSearch .xs-key.onFocus {
-  background: #eb564a;
-  color: #fff;
-}
-#xtvSearch .xs-right {
+body.xtv #xtvPlayerUI .xp-menu {
+  display: none;
   position: absolute;
-  left: 34%;
+  bottom: 7.4vw;
+  min-width: 15.6vw;
+  max-width: 70vw;
+  margin-left: 6.25vw;
+  padding: 0.47vw;
+  border-radius: 0.25vw;
+  background: rgba(24, 24, 27, 0.96);
+  border: 1px solid #2E2E34;
+}
+body.xtv #xtvPlayerUI .xp-menu.on {
+  display: -webkit-flex;
+  display: flex;
+}
+body.xtv #xtvPlayerUI .xp-col {
+  min-width: 12.5vw;
+  padding: 0 0.31vw;
+}
+body.xtv #xtvPlayerUI .xp-col + .xp-col {
+  border-left: 1px solid #2E2E34;
+}
+body.xtv #xtvPlayerUI .xp-col-h {
+  padding: 0.47vw 0.8vw 0.6vw;
+  font-size: 0.86vw;
+  font-weight: 500;
+  letter-spacing: 0.117vw;
+  text-transform: uppercase;
+  color: #8A8A93;
+}
+body.xtv #xtvPlayerUI .xp-col.active .xp-col-h {
+  color: #F4F4F5;
+}
+/* Fuera de la columna activa, la opción elegida se marca sin resaltar */
+body.xtv #xtvPlayerUI .xp-col:not(.active) .xp-opt.current {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------------------------------------------------------------
+ * Estilo de los subtítulos (tamaño y color elegidos en el panel)
+ * .jw-text-track-cue: los dibuja el reproductor (LG, PC)
+ * video::cue: los dibuja la TV (Samsung)
+ * --------------------------------------------------------------- */
+body.xtv #div_vimeo_player .jw-text-track-cue {
+  background-color: transparent !important;
+  font-family: Roboto, Arial, sans-serif !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  text-shadow: 0 0 0.3vw #000000, 0.08vw 0.08vw 0.16vw #000000, -0.08vw -0.08vw 0.16vw #000000 !important;
+}
+body.xtv #div_vimeo_player video::cue {
+  background-color: transparent;
+  font-family: Roboto, Arial, sans-serif;
+  text-shadow: 0 0 0.3vw #000000, 0.08vw 0.08vw 0.16vw #000000, -0.08vw -0.08vw 0.16vw #000000;
+}
+body.xtv.xtv-cap-s #div_vimeo_player .jw-text-track-cue {
+  font-size: 2vw !important;
+}
+body.xtv.xtv-cap-m #div_vimeo_player .jw-text-track-cue {
+  font-size: 2.6vw !important;
+}
+body.xtv.xtv-cap-l #div_vimeo_player .jw-text-track-cue {
+  font-size: 3.4vw !important;
+}
+body.xtv.xtv-cap-xl #div_vimeo_player .jw-text-track-cue {
+  font-size: 4.4vw !important;
+}
+body.xtv.xtv-cap-s #div_vimeo_player video::cue {
+  font-size: 2vw;
+}
+body.xtv.xtv-cap-m #div_vimeo_player video::cue {
+  font-size: 2.6vw;
+}
+body.xtv.xtv-cap-l #div_vimeo_player video::cue {
+  font-size: 3.4vw;
+}
+body.xtv.xtv-cap-xl #div_vimeo_player video::cue {
+  font-size: 4.4vw;
+}
+body.xtv.xtv-cap-white #div_vimeo_player .jw-text-track-cue {
+  color: #FFFFFF !important;
+}
+body.xtv.xtv-cap-yellow #div_vimeo_player .jw-text-track-cue {
+  color: #FFE600 !important;
+}
+body.xtv.xtv-cap-white #div_vimeo_player video::cue {
+  color: #FFFFFF;
+}
+body.xtv.xtv-cap-yellow #div_vimeo_player video::cue {
+  color: #FFE600;
+}
+body.xtv #xtvPlayerUI .xp-opt {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 2.6vw;
+  padding: 0 0.8vw;
+  border-radius: 0.25vw;
+  font-size: 1.1vw;
+  color: #D4D4D8;
+  cursor: pointer;
+}
+body.xtv #xtvPlayerUI .xp-opt.current {
+  color: #FFFFFF;
+  font-weight: 500;
+}
+body.xtv #xtvPlayerUI .xp-opt.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
+}
+body.xtv #xtvPlayerUI .xp-toast {
+  position: absolute;
+  top: 3vw;
+  right: 6.25vw;
+  padding: 0.6vw 1.1vw;
+  border-radius: 0.25vw;
+  background: rgba(14, 14, 16, 0.9);
+  font-size: 1.1vw;
+  opacity: 0;
+  -webkit-transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease;
+}
+body.xtv #xtvPlayerUI .xp-toast.on {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------
+ * Carga, mensajes y PIN
+ * --------------------------------------------------------------- */
+body.xtv #modal.modal {
+  background: rgba(14, 14, 16, 0.92);
+  z-index: 70 !important;
+}
+body.xtv #modal .loading {
+  margin-top: 23vw;
+}
+body.xtv #modal .loading img {
+  height: 4.4vw;
+}
+body.xtv .simpleModal {
+  background: #0E0E10;
+}
+
+/* ---------------------------------------------------------------
+ * Explorar (#xtvBrowse)
+ * --------------------------------------------------------------- */
+body.xtv #xtvBrowse {
+  position: absolute;
+  top: 0;
+  left: 5.625vw;
+  right: 0;
+  height: 56.25vw;
+  z-index: 30;
+  overflow: hidden;
+  background: #0E0E10;
+  color: #F4F4F5;
+  font-family: Roboto, Arial, sans-serif;
+}
+body.xtv .xbw-head {
+  position: absolute;
+  left: 3.75vw;
+  top: 3.125vw;
+}
+body.xtv .xbw-crumb {
+  font-size: 1.016vw;
+  color: #8A8A93;
+  height: 1.4vw;
+}
+body.xtv .xbw-h1 {
+  font-size: 2.03vw;
+  font-weight: 500;
+}
+body.xtv .xbw-view {
+  position: absolute;
+  left: 3.75vw;
+  right: 5vw;
+  top: 10vw;
+  bottom: 0;
+  overflow: hidden;
+  padding: 0.4vw 0 0 0.4vw;
+}
+body.xtv .xbw-body {
+  position: relative;
+  -webkit-transition: -webkit-transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.xtv .xbw-genres,
+body.xtv .xbw-movies {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+}
+body.xtv .xbw-genre {
+  position: relative;
+  -webkit-flex: none;
+  flex: none;
+  box-sizing: border-box;
+  width: -webkit-calc(25% - 1.25vw);
+  width: calc(25% - 1.25vw);
+  height: 8.125vw;
+  margin: 0 1.25vw 1.25vw 0;
+  padding: 0 1.5625vw 1.4vw;
+  border: 0;
+  border-radius: 0.25vw;
+  background: #18181B;
+  color: #D4D4D8;
+  text-align: left;
+  font-family: inherit;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: flex-end;
+  align-items: flex-end;
+  cursor: pointer;
+  outline: none;
+  -webkit-transition: -webkit-transform 0.12s ease-out;
+  transition: transform 0.12s ease-out;
+}
+body.xtv .xbw-accent {
+  position: absolute;
+  left: 1.5625vw;
+  top: 1.4vw;
+  width: 1.5625vw;
+  height: 0.156vw;
+  border-radius: 0.08vw;
+  background: #EB564A;
+}
+body.xtv .xbw-gname {
+  font-size: 1.5625vw;
+  font-weight: 500;
+}
+body.xtv .xbw-genre.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
+  -webkit-transform: scale(1.04);
+  transform: scale(1.04);
+}
+body.xtv .xbw-genre.onFocus .xbw-accent {
+  background: rgba(255, 255, 255, 0.7);
+}
+body.xtv .xbw-movie {
+  -webkit-flex: none;
+  flex: none;
+  width: -webkit-calc(14.2857% - 1.25vw);
+  width: calc(14.2857% - 1.25vw);
+  margin: 0 1.25vw 1.875vw 0;
+  cursor: pointer;
+  -webkit-transform-origin: center top;
+  transform-origin: center top;
+  -webkit-transition: -webkit-transform 0.12s ease-out;
+  transition: transform 0.12s ease-out;
+}
+body.xtv .xbw-ph {
+  position: relative;
+  padding-top: 150%;
+  border-radius: 0.25vw;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+body.xtv .xbw-ph img {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+body.xtv .xbw-movie.onFocus {
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+}
+body.xtv .xbw-t {
+  margin-top: 0.625vw;
+  height: 2.4vw;
+  overflow: hidden;
+  font-size: 0.94vw;
+  line-height: 1.3;
+  color: #8A8A93;
+}
+body.xtv .xbw-movie.onFocus .xbw-t {
+  color: #FFFFFF;
+}
+
+/* ---------------------------------------------------------------
+ * Búsqueda (#xtvSearch)
+ * --------------------------------------------------------------- */
+body.xtv #xtvSearch {
+  position: absolute;
+  top: 0;
+  left: 5.625vw;
+  right: 0;
+  height: 56.25vw;
+  z-index: 30;
+  overflow: hidden;
+  background: #0E0E10;
+  color: #F4F4F5;
+  font-family: Roboto, Arial, sans-serif;
+}
+body.xtv #xtvSearch .xs-logo {
+  display: none;
+}
+body.xtv #xtvSearch .xs-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 32.8vw;
+  padding: 4.4vw 3.1vw 0 3.75vw;
+  box-sizing: border-box;
+  background: #131316;
+}
+body.xtv #xtvSearch .xs-title {
+  font-size: 0.94vw;
+  letter-spacing: 0.117vw;
+  font-weight: 500;
+  color: #8A8A93;
+  margin-bottom: 1vw;
+}
+body.xtv #xtvSearch .xs-field {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 4.06vw;
+  border-bottom: 0.156vw solid #EB564A;
+  margin-bottom: 1.72vw;
+}
+body.xtv #xtvSearch .xs-sicon svg {
+  display: block;
+  width: 1.72vw;
+  height: 1.72vw;
+  color: #8A8A93;
+  margin-right: 0.94vw;
+}
+body.xtv #xtvSearch .xs-input {
+  -webkit-flex: 1;
+  flex: 1;
+  min-width: 0;
+  height: 3.6vw;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: #F4F4F5;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 2.19vw;
+  letter-spacing: 0.04vw;
+  text-align: left;
+  text-indent: 0;
+}
+body.xtv #xtvSearch .xs-keys {
+  overflow: hidden;
+}
+body.xtv #xtvSearch .xs-key {
+  float: left;
+  box-sizing: border-box;
+  width: -webkit-calc(16.666% - 0.625vw);
+  width: calc(16.666% - 0.625vw);
+  height: 3.75vw;
+  line-height: 3.75vw;
+  margin: 0 0.625vw 0.625vw 0;
+  border-radius: 0.25vw;
+  background: #222227;
+  color: #D4D4D8;
+  text-align: center;
+  font-size: 1.4vw;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-transition: -webkit-transform 0.1s ease-out;
+  transition: transform 0.1s ease-out;
+}
+body.xtv #xtvSearch .xs-key.w2 {
+  width: -webkit-calc(33.333% - 0.625vw);
+  width: calc(33.333% - 0.625vw);
+}
+body.xtv #xtvSearch .xs-key.w3 {
+  width: -webkit-calc(50% - 0.625vw);
+  width: calc(50% - 0.625vw);
+}
+body.xtv #xtvSearch .xs-key.w6 {
+  width: -webkit-calc(100% - 0.625vw);
+  width: calc(100% - 0.625vw);
+}
+body.xtv #xtvSearch .xs-key.small {
+  font-size: 1.094vw;
+  font-weight: 400;
+}
+body.xtv #xtvSearch .xs-key.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+}
+body.xtv #xtvSearch .xs-tip {
+  clear: both;
+  padding-top: 0.8vw;
+  font-size: 0.94vw;
+  color: #8A8A93;
+  line-height: 1.5;
+}
+body.xtv #xtvSearch .xs-right {
+  position: absolute;
+  left: 32.8vw;
   right: 0;
   top: 0;
   bottom: 0;
-  padding: 4.2vw 3vw 0 2.5vw;
+  padding: 4.4vw 5vw 0 3.4vw;
   box-sizing: border-box;
   overflow: hidden;
 }
-#xtvSearch .xs-status {
-  font-size: 1.1vw;
-  color: #999;
-  height: 1.6vw;
-  margin-bottom: 0.6vw;
+body.xtv #xtvSearch .xs-status {
+  height: 1.4vw;
+  margin-bottom: 0.4vw;
+  font-size: 0.94vw;
+  color: #8A8A93;
 }
-#xtvSearch .xs-body {
+body.xtv #xtvSearch .xs-body {
   position: relative;
   -webkit-transition: -webkit-transform 0.15s ease-out;
   transition: transform 0.15s ease-out;
 }
-#xtvSearch .xs-label {
-  font-size: 1.1vw;
-  color: #bbb;
-  letter-spacing: 0.12vw;
-  text-transform: uppercase;
-  margin: 0 0 0.8vw 0;
+body.xtv #xtvSearch .xs-label {
+  margin: 0 0 1.1vw;
   padding: 0;
+  font-size: 0.94vw;
+  letter-spacing: 0.117vw;
+  font-weight: 500;
+  color: #8A8A93;
+  text-transform: uppercase;
 }
-#xtvSearch .xs-hint {
-  font-size: 1.3vw;
-  color: #888;
-  line-height: 1.6;
+body.xtv #xtvSearch .xs-hint {
   margin: 0;
   padding: 0;
+  font-size: 1.25vw;
+  line-height: 1.6;
+  color: #8A8A93;
 }
-#xtvSearch .xs-people {
+body.xtv #xtvSearch .xs-people {
   overflow: hidden;
-  margin-bottom: 1.4vw;
+  margin-bottom: 1.6vw;
+  padding: 0.3vw 0 0 0.3vw;
 }
-#xtvSearch .xs-person {
+body.xtv #xtvSearch .xs-person {
   float: left;
-  background: #2e2e2e;
-  border-radius: 2vw;
-  padding: 0.55vw 1.2vw;
-  margin: 0 0.7vw 0.7vw 0;
-  font-size: 1.15vw;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 3.44vw;
+  padding: 0 1.25vw 0 0.47vw;
+  margin: 0 0.78vw 0.78vw 0;
+  border-radius: 0.25vw;
+  background: #1C1C20;
+  color: #E4E4E7;
+  font-size: 1.17vw;
   cursor: pointer;
 }
-#xtvSearch .xs-person .role {
-  color: #eb564a;
-  font-size: 0.85vw;
-  margin-left: 0.6vw;
+body.xtv #xtvSearch .xs-ini {
+  width: 2.5vw;
+  height: 2.5vw;
+  line-height: 2.5vw;
+  margin-right: 0.78vw;
+  border-radius: 50%;
+  background: #2E2E34;
+  color: #B4B4BB;
+  text-align: center;
+  font-size: 0.94vw;
+  font-weight: 500;
 }
-#xtvSearch .xs-person.onFocus {
-  background: #eb564a;
+body.xtv #xtvSearch .xs-person .role {
+  margin-left: 0.62vw;
+  font-size: 0.94vw;
+  color: #8A8A93;
 }
-#xtvSearch .xs-person.onFocus .role {
-  color: #fff;
+body.xtv #xtvSearch .xs-person.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
 }
-#xtvSearch .xs-movies {
-  overflow: hidden;
+body.xtv #xtvSearch .xs-person.onFocus .role {
+  color: rgba(255, 255, 255, 0.8);
 }
-#xtvSearch .xs-movie {
+body.xtv #xtvSearch .xs-person.onFocus .xs-ini {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+body.xtv #xtvSearch .xs-movies {
+  padding: 0.3vw 0 0 0.3vw;
+}
+body.xtv #xtvSearch .xs-movies:after {
+  content: "";
+  display: block;
+  clear: both;
+}
+body.xtv #xtvSearch .xs-movie {
   float: left;
-  width: -webkit-calc(20% - 1vw);
-  width: calc(20% - 1vw);
-  margin: 0 1vw 1.2vw 0;
+  width: -webkit-calc(16.666% - 1.1vw);
+  width: calc(16.666% - 1.1vw);
+  margin: 0 1.1vw 1.4vw 0;
   cursor: pointer;
+  -webkit-transform-origin: center top;
+  transform-origin: center top;
+  -webkit-transition: -webkit-transform 0.12s ease-out;
+  transition: transform 0.12s ease-out;
 }
-#xtvSearch .xs-movie .ph {
+body.xtv #xtvSearch .xs-movie .ph {
   position: relative;
   width: 100%;
   padding-top: 150%;
+  border-radius: 0.25vw;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
 }
-#xtvSearch .xs-movie img {
+body.xtv #xtvSearch .xs-movie img {
   position: absolute;
+  top: 0;
+  left: 0;
+}
+body.xtv #xtvSearch .xs-movie.onFocus {
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+}
+body.xtv #xtvSearch .xs-movie .t {
+  margin-top: 0.55vw;
+  height: 2.4vw;
+  overflow: hidden;
+  font-size: 0.9vw;
+  line-height: 1.3;
+  text-align: left;
+  color: #8A8A93;
+}
+body.xtv #xtvSearch .xs-movie.onFocus .t {
+  color: #FFFFFF;
+}
+body.xtv #xtvSearch .xs-recent {
+  padding: 0.7vw 1vw;
+  margin-bottom: 0.3vw;
+  border-radius: 0.25vw;
+  font-size: 1.33vw;
+  color: #D4D4D8;
+  cursor: pointer;
+}
+body.xtv #xtvSearch .xs-recent.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
+}
+body.xtv #xtvSearch .xs-recent.clear {
+  margin-top: 0.8vw;
+  font-size: 1.016vw;
+  color: #8A8A93;
+}
+body.xtv #xtvSearch .xs-recent.clear.onFocus {
+  color: #FFFFFF;
+}
+
+/* ---------------------------------------------------------------
+ * Activá Xiclos en tu TV (vinculación con QR o código)
+ * Público mayor: letra grande, alto contraste, Atkinson Hyperlegible.
+ * --------------------------------------------------------------- */
+body.xtv #modalPin.xl {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 40;
+  background: #0E0E10;
+  background: radial-gradient(ellipse at 50% 0%, #1A1416 0%, #0E0E10 60%);
+  color: #FFFFFF;
+  font-family: "Atkinson Hyperlegible", Roboto, Arial, sans-serif;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
 }
-#xtvSearch .xs-movie .t {
-  font-size: 0.95vw;
+body.xtv #modalPin .xl-box {
+  position: relative;
+  width: 82vw;
   text-align: center;
-  margin-top: 0.5vw;
-  height: 2.6vw;
-  overflow: hidden;
-  color: #ddd;
 }
-#xtvSearch .xs-movie.onFocus .ph {
-  outline: 0.25vw solid #eb564a;
+body.xtv #modalPin .xl-title {
+  margin: 0 0 3.6vw;
+  font-size: 3.4vw;
+  font-weight: 700;
+  letter-spacing: -0.02vw;
 }
-#xtvSearch .xs-recent {
-  font-size: 1.4vw;
-  padding: 0.7vw 1vw;
-  margin-bottom: 0.4vw;
-  color: #ddd;
-  border-left: 0.2vw solid transparent;
-  cursor: pointer;
+body.xtv #modalPin .xl-cols {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
 }
-#xtvSearch .xs-recent.onFocus {
-  color: #eb564a;
-  border-left-color: #eb564a;
-  background: rgba(255, 255, 255, 0.04);
+body.xtv #modalPin .xl-qr-col {
+  -webkit-flex: none;
+  flex: none;
 }
-#xtvSearch .xs-recent.clear {
-  font-size: 1.05vw;
-  color: #999;
-  margin-top: 1vw;
+body.xtv #modalPin .xl-qr {
+  width: 25vw;
+  height: 25vw;
+  box-sizing: border-box;
+  padding: 1.7vw;
+  border-radius: 1vw;
+  background: #FFFFFF;
 }
-#xtvSearch .xs-recent.clear.onFocus {
-  color: #eb564a;
+body.xtv #modalPin .xl-qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
-#xtvSearch .xs-logo {
+body.xtv #modalPin .xl-qr-cap {
+  margin-top: 1.6vw;
+  font-size: 2.1vw;
+  font-weight: 700;
+}
+body.xtv #modalPin .xl-or {
+  -webkit-flex: none;
+  flex: none;
+  position: relative;
+  width: 1px;
+  height: 25vw;
+  margin: 0 5vw;
+  background: #3A3A42;
+}
+body.xtv #modalPin .xl-or span {
   position: absolute;
-  top: 1.6vw;
-  right: 2.1vw;
-  height: 4.8vw;
+  top: 50%;
+  left: 50%;
+  width: 3vw;
+  margin: -1.1vw 0 0 -1.5vw;
+  line-height: 2.2vw;
+  background: #0E0E10;
+  color: #B4B4BB;
+  font-size: 1.6vw;
+}
+body.xtv #modalPin .xl-alt {
+  -webkit-flex: none;
+  flex: none;
+  width: 32vw;
+  text-align: left;
+}
+body.xtv #modalPin .xl-alt-h {
+  margin-bottom: 2.4vw;
+  font-size: 2.5vw;
+  font-weight: 700;
+}
+body.xtv #modalPin .xl-step {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+  margin-bottom: 2vw;
+  font-size: 2.1vw;
+  line-height: 1.3;
+}
+body.xtv #modalPin .xl-n {
+  -webkit-flex: none;
+  flex: none;
+  width: 2.6vw;
+  height: 2.6vw;
+  margin-right: 1.2vw;
+  border-radius: 50%;
+  background: #2A2A30;
+  color: #FFFFFF;
+  font-size: 1.4vw;
+  font-weight: 700;
+  line-height: 2.6vw;
+  text-align: center;
+}
+body.xtv #modalPin .xl-url {
+  color: #EB564A;
+  font-weight: 700;
+  font-size: 2.4vw;
+}
+/* Dos caminos (web y app del celular) y el código, que sirve para ambos */
+body.xtv #modalPin .xl-way {
+  margin-bottom: 2vw;
+  font-size: 2.1vw;
+  line-height: 1.3;
+}
+body.xtv #modalPin .xl-lbl {
+  margin-bottom: 0.3vw;
+  font-size: 1.15vw;
+  font-weight: 700;
+  letter-spacing: 0.12vw;
+  text-transform: uppercase;
+  color: #B4B4BB;
+}
+body.xtv #modalPin .xl-way .xl-url {
+  font-size: 2.1vw;
+}
+body.xtv #modalPin .xl-way b {
+  font-weight: 700;
+}
+body.xtv #modalPin .xl-menu-icon {
+  display: inline-block;
+  width: 1.8vw;
+  height: 1.8vw;
+  vertical-align: -0.2vw;
+}
+body.xtv #modalPin .xl-arrow {
+  color: #B4B4BB;
+  margin: 0 0.3vw;
+}
+body.xtv #modalPin .xl-then {
+  margin-top: 2.6vw;
+  margin-bottom: 1.2vw;
+}
+body.xtv #modalPin .xl-code {
+  display: inline-block;
+  margin-left: 0;
+  padding: 1.2vw 2.6vw;
+  border-radius: 0.6vw;
+  background: #1C1C21;
+  border: 1px solid #3A3A42;
+  font-size: 6vw;
+  font-weight: 700;
+  letter-spacing: 0.5vw;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+body.xtv #modalPin .xl-foot {
+  margin-top: 3.6vw;
+}
+body.xtv #modalPin .xl-foot-1 {
+  font-size: 2.1vw;
+  font-weight: 700;
+}
+body.xtv #modalPin .xl-foot-2 {
+  margin-top: 0.8vw;
+  font-size: 1.6vw;
+  color: #B4B4BB;
+}
+body.xtv #modalPin .xl-helper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4.5vw;
+  font-size: 1.6vw;
+  color: #FFD27A;
+}
+
+/* ---------------------------------------------------------------
+ * Carteles de error (catálogo XC-*) y nota del loader
+ * --------------------------------------------------------------- */
+body.xtv #modalError .xm-card {
+  width: 48vw;
+}
+body.xtv #modalError .xm-err-title {
+  margin: 0 0 0.9vw;
+  font-size: 1.95vw;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #FFFFFF;
+}
+body.xtv #modalError .xm-message {
+  margin-bottom: 1.4vw;
+  font-size: 1.5vw;
+  color: #D4D4D8;
+}
+body.xtv #modalPin .xl-foot-2.xl-warn {
+  color: #FFD27A;
+}
+body.xtv #modalError .xm-err-code {
+  margin: 0 0 1.6vw;
+  padding-top: 1vw;
+  border-top: 1px solid #2E2E34;
+  font-size: 1.17vw;
+  line-height: 1.45;
+  color: #8A8A93;
+}
+body.xtv .xl-msg-code {
+  display: block;
+  margin-top: 0.6vw;
+  font-size: 0.86em;
+  color: #8A8A93;
+}
+body.xtv #modal .xl-loader-note {
+  margin: 1.4vw 0 0;
+  text-align: center;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 1.25vw;
+  color: #D4D4D8;
 }

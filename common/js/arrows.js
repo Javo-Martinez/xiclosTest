@@ -19,14 +19,72 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     var lastNav = { action: null, time: 0 };
     var NAV_REPEAT_MS = 60; // descarta repeticiones demasiado rápidas del control
 
+    // Si hay un video, primero se guarda la posición (máximo 1,5 s)
+    function afterFlush(go) {
+      var pending = XTV.player && XTV.player.flush ? XTV.player.flush() : null;
+      if (pending && pending.always) {
+        var t = setTimeout(go, 1500);
+        pending.always(function () {
+          clearTimeout(t);
+          go();
+        });
+      } else {
+        go();
+      }
+    }
+
+    // Cierra la app (Salir, EXIT y también HOME)
+    var quitting = false;
+    function quit() {
+      if (quitting) {
+        return;
+      }
+      quitting = true;
+      afterFlush(function () {
+        try {
+          XTV.platform.exit();
+        } catch (e) {}
+        // Si el sistema no la cerró, se puede volver a intentar
+        setTimeout(function () {
+          quitting = false;
+        }, 2000);
+      });
+    }
+
+    /*
+     * HOME: el televisor no cierra la app, la deja en segundo plano, y al
+     * volver aparecía donde estaba (por ejemplo, con el video trabado).
+     * Ahora, al pasar a segundo plano se cierra como con Salir; y si el
+     * sistema igual la mantiene viva, al volver arranca de cero.
+     */
+    var wentHidden = false;
+    function isTV() {
+      var n = XTV.platform && XTV.platform.name;
+      return n === "webos" || n === "tizen" || n === "amazon";
+    }
+    function onVisibility() {
+      if (!isTV()) {
+        return;
+      }
+      if (document.hidden || document.webkitHidden) {
+        wentHidden = true;
+        quit();
+      } else if (wentHidden) {
+        wentHidden = false;
+        window.location.reload();
+      }
+    }
+
     function dispatch(action, event) {
       // Teclas globales
       if (action === "EXIT") {
-        XTV.platform.exit();
+        quit();
         return true;
       }
       if (action === "INFO") {
-        window.location.reload();
+        afterFlush(function () {
+          window.location.reload();
+        });
         return true;
       }
 
@@ -60,6 +118,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return XTV.player.handleKey(action);
         case "search":
           return XTV.search.handleKey(action, event);
+        case "browse":
+          return XTV.browse.handleKey(action);
         case "pin":
           return XTV.login.handleKey(action);
         default:
@@ -121,6 +181,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           return;
         }
         XTV.app.booted = true;
+        $("body").addClass("xtv");
+        // Pesos de Roboto que usa el diseño (el index.html solo carga el 400)
+        $("head").append('<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500&amp;display=swap">');
         XTV.net.init();
         XTV.pointer.init();
         try {
@@ -130,11 +193,27 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         }
         // Fase de captura: el handler corre antes que el del player
         window.addEventListener("keydown", onKeyDown, true);
+        document.addEventListener("visibilitychange", onVisibility);
+        document.addEventListener("webkitvisibilitychange", onVisibility);
+        // LG: volver a abrir la app mientras seguía viva en segundo plano
+        document.addEventListener("webOSRelaunch", function () {
+          if (wentHidden || XTV.state.layer === "video") {
+            window.location.reload();
+          }
+        });
         // La librería del player se pide en segundo plano
         XTV.player.preload();
+        // Modelo de la TV para los registros de error
+        try {
+          XTV.platform.getTVInfo(function (info) {
+            XTV.state.device = info || null;
+          });
+        } catch (e) {}
         XTV.setLayer("boot");
         XTV.login.start();
       },
+
+      quit: quit,
 
       enterMain: function () {
         showChrome();
