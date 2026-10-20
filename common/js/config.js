@@ -43,20 +43,15 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     SEARCH_MAX_PEOPLE: 8,
     SEARCH_RECENT_MAX: 8,
 
-    // Carrusel de Cineclub: cantidad máxima de tarjetas
-
     // Pósters: cuántos se cargan por delante y por detrás de lo visible
     POSTERS_AHEAD: 4,
     POSTERS_BEHIND: 2,
 
     // Retraso para cambiar el fondo desenfocado (evita recalcularlo con cada tecla)
-    BACKGROUND_DELAY_MS: 120,
+    BACKGROUND_DELAY_MS: 250,
 
     // PIN de sincronización
     PIN_RENEW_SECONDS: 60,
-    // Vinculación: el QR abre SYNC_URL?SYNC_PARAM=<código>
-    SYNC_URL: "https://xiclos.com/activar",
-    SYNC_PARAM: "codigo",
     PIN_POLL_SECONDS: 10,
 
     // Player
@@ -64,16 +59,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     PROGRESS_DONE_RATIO: 0.95,
     SEEK_SHORT_SECONDS: 10,
     SEEK_LONG_SECONDS: 30,
-    // Adelantar/atrasar: el paso crece según cuánto hace que se mantiene
-    // apretado ([milisegundos desde que empezó, segundos por paso])
-    SEEK_ACCEL: [[0, 10], [1000, 30], [2500, 60], [5000, 120]],
-    SEEK_COMMIT_MS: 700, // salto real después de esta pausa sin teclas
-    SEEK_CHAIN_MS: 600, // teclas más espaciadas que esto reinician la aceleración
-    PLAYER_UI_HIDE_MS: 5000, // la barra se oculta sola si no se toca nada
-    RESUME_MIN_SECONDS: 30, // menos que esto no cuenta como "Seguir viendo"
-    // Una película que figura en "Lo que ya viste" cuenta como empezada aunque
-    // la respuesta no traiga el tiempo
-    RESUME_FROM_HISTORY_LIST: true,
 
     // Peticiones
     REQUEST_TIMEOUT_MS: 20000,
@@ -681,8 +666,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     XTV.refocus = function () {
       if (XTV.state.layer === "search" && XTV.search && XTV.search.refocus) {
         XTV.search.refocus();
-      } else if (XTV.state.layer === "browse" && XTV.browse && XTV.browse.refocus) {
-        XTV.browse.refocus();
       } else if (XTV.grid && XTV.grid.refocus) {
         XTV.grid.refocus();
       }
@@ -734,38 +717,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       isActive: function () {
         return pointer.active;
       }
-    };
-
-    /* ======================================================================
-     * Íconos (SVG de trazo, heredan el color del texto)
-     * ==================================================================== */
-    var ICONS = {
-      search: '<path d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM16.2 16.2L20 20"/>',
-      home: '<path d="M4 11l8-7l8 7M6 9.5V20h12V9.5"/>',
-      cineclub: '<path d="M4 6h16v12H4zM4 10h16M9 6v4M15 6v4"/>',
-      compass: '<path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM15.5 8.5l-2 5l-5 2l2-5z"/>',
-      star: '<path d="M12 4l2.4 5l5.6.6l-4.2 3.8l1.2 5.6L12 16.2L7 19l1.2-5.6L4 9.6l5.6-.6z"/>',
-      power: '<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>',
-      logout: '<path d="M10 5H5v14h5M15 8l4 4l-4 4M19 12H9"/>',
-      plus: '<path d="M12 5v14M5 12h14"/>',
-      check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
-      backspace: '<path d="M9 5h11v14H9l-6-7zM12.5 9.5l5 5M17.5 9.5l-5 5"/>',
-      space: '<path d="M3 10v5h18v-5"/>',
-      play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>',
-      pause: '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/>',
-      restart: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/>',
-      cc: '<path d="M3 6h18v12H3zM10.5 10.2a2.3 2.3 0 1 0 0 3.6M17 10.2a2.3 2.3 0 1 0 0 3.6"/>',
-      cast: '<path d="M3 8V6h18v12h-6M3 12a6 6 0 0 1 6 6M3 15.5a2.5 2.5 0 0 1 2.5 2.5M3 18h.01"/>'
-    };
-
-    XTV.icon = function (name, cls) {
-      return (
-        '<svg class="' +
-        (cls || "") +
-        '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        (ICONS[name] || "") +
-        "</svg>"
-      );
     };
 
     /* ======================================================================

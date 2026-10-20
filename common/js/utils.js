@@ -11,7 +11,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
    * Xiclos TV v2 - modales
    * Un solo modal abierto a la vez. Al cerrarse devuelve las teclas a la
    * capa que estaba activa antes de abrirlo.
-   * Diseño: tarjeta centrada sobre el fondo oscurecido (.xm-*).
+   * Mantiene el markup y las clases del CSS existente (#confirm,
+   * .confirmField, .onFocus, etc.).
    * ES5 puro.
    */
   (function ($, XTV) {
@@ -86,7 +87,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         closing.$el.remove();
         if (XTV.state.layer === "modal") {
           XTV.setLayer(closing.prevLayer);
-          XTV.refocus();
         }
         if (!silent && closing.def.onClose) {
           closing.def.onClose();
@@ -119,6 +119,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
             return true;
           }
           if (handled === "native") {
+            // La tecla la procesa el navegador (por ejemplo, mover el cursor del texto)
             return false;
           }
         }
@@ -148,27 +149,12 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
        * Plantillas
        * ------------------------------------------------------------ */
 
-      // Fondo oscurecido + tarjeta centrada. Devuelve { $el, $card }.
-      shell: function (id, cardClass) {
-        var $el = $('<div class="xm-overlay"></div>').attr("id", id);
-        var $card = $('<div class="xm-card"></div>');
-        if (cardClass) {
-          $card.addClass(cardClass);
-        }
-        $el.append($card);
-        return { $el: $el, $card: $card };
-      },
-
-      button: function (label, primary, icon) {
-        var $b = $('<button type="button" class="xm-btn"></button>');
-        if (primary) {
-          $b.addClass("primary");
-        }
-        if (icon) {
-          $b.append(XTV.icon(icon, "xm-btn-icon"));
-        }
-        $b.append($("<span></span>").text(label));
-        return $b;
+      // Fondo con trapecios (igual que los modales anteriores)
+      decorate: function ($el) {
+        $el.append('<div class="trapezium2 modalTrapezium2"></div>');
+        $el.append('<div class="trapezium modalTrapezium"></div>');
+        $el.append('<div class="triangle"></div>');
+        return $el;
       },
 
       /*
@@ -176,17 +162,22 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
        * opts = { message, yes, no, onYes, onNo, focusYes }
        */
       confirm: function (opts) {
-        var sh = modal.shell("modalConfirm", "xm-small");
-        sh.$card.append($('<p class="xm-message"></p>').text(opts.message));
-        var $actions = $('<div class="xm-actions"></div>');
-        var $yes = modal.button(opts.yes || "Sí", false);
-        var $no = modal.button(opts.no || "No", false);
-        $actions.append($yes).append($no);
-        sh.$card.append($actions);
+        var $el = $('<div id="modalConfirm" class="modal"></div>');
+        modal.decorate($el);
+        var $confirm = $('<p id="confirm"></p>');
+        $confirm.append($("<p></p>").text(opts.message));
+        var $yes = $('<button id="confirmAction" class="confirmField"></button>').text(
+          opts.yes || "SI"
+        );
+        var $no = $('<button id="cancelAction" class="confirmField"></button>').text(
+          opts.no || "NO"
+        );
+        $confirm.append($yes).append($no);
+        $el.append($confirm);
 
         modal.open({
-          $el: sh.$el,
-          items: ".xm-btn",
+          $el: $el,
+          items: ".confirmField",
           focus: opts.focusYes ? $yes.get(0) : $no.get(0),
           onActivate: function (el) {
             modal.close(true);
@@ -208,19 +199,20 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       },
 
       /*
-       * Aviso con un solo botón.
+       * Aviso con un solo botón OK.
        * opts = { message, onClose }
        */
       alert: function (opts) {
-        var sh = modal.shell("alertSearch", "xm-small");
-        sh.$card.append($('<p class="xm-message"></p>').text(opts.message));
-        var $actions = $('<div class="xm-actions"></div>');
-        var $ok = modal.button("Entendido", false);
-        $actions.append($ok);
-        sh.$card.append($actions);
+        var $el = $('<div id="alertSearch" class="modal"></div>');
+        modal.decorate($el);
+        var $confirm = $('<p id="confirm"></p>');
+        $confirm.append($("<p></p>").text(opts.message));
+        var $ok = $('<button id="confirmAction" class="confirmField"></button>').text("OK");
+        $confirm.append($ok);
+        $el.append($confirm);
         modal.open({
-          $el: sh.$el,
-          items: ".xm-btn",
+          $el: $el,
+          items: ".confirmField",
           onActivate: function () {
             modal.close(true);
             if (opts.onClose) {
@@ -240,110 +232,108 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
 
   /*
    * Xiclos TV v2 - menú lateral
-   * Riel de íconos fijo (#xtvMenu) y un panel que se desliza con
-   * transform + opacity al abrirse. Sin cambios de ancho, para que sea
-   * fluido también en TVs de 2017.
+   * Mismo markup y clases que la versión anterior (#newMenu, .icon,
+   * .menuTitle, .newMenuActive).
    * ES5 puro.
    */
   (function ($, XTV) {
     "use strict";
 
+    var util = XTV.util;
+    var C = XTV.config;
+
     var $menu = null;
     var index = 0;
-    var current = "home";
-    var list = [];
 
     function entries() {
-      var out = [
-        { id: "buscar", icon: "search", text: "Buscar", run: function () { XTV.search.open(); } },
-        { id: "home", icon: "home", text: "Inicio", run: function () { XTV.grid.goHome(true); } },
-        { id: "cineclub", icon: "cineclub", text: "Cineclub", run: function () { XTV.grid.showCineclub(); } },
-        { id: "explorar", icon: "compass", text: "Explorar", run: function () { XTV.browse.open(); } }
+      var list = [
+        { id: "buscar", img: "buscar.png", text: "Buscar", run: function () { XTV.search.open(); } },
+        { id: "home", img: "home.png", text: "Inicio", run: function () { XTV.grid.goHome(true); } },
+        { id: "cineclub", img: "cineclub.png", text: "Cineclub", run: function () { XTV.grid.showCineclub(); } },
+        { id: "explorar", img: "explorar.png", text: "Explorar", run: function () { XTV.actions.genres(); } }
       ];
       if (XTV.session.isStudent()) {
-        out.push({
+        list.push({
           id: "alumnos",
-          icon: "star",
+          img: "exclusivo.png",
           text: "Exclusivos",
           run: function () { XTV.grid.showList({ type: "students" }); }
         });
       }
-      out.push({ id: "salir", icon: "power", text: "Salir", group: true, run: function () { XTV.actions.confirmExit(); } });
-      out.push({
+      list.push({ id: "salir", img: "salir.png", text: "Salir", run: function () { XTV.actions.confirmExit(); } });
+      list.push({
         id: "cerrar_sesion",
-        icon: "logout",
+        img: "cerrar_sesion.png",
         text: "Cerrar sesión",
         run: function () { XTV.actions.confirmLogout(); }
       });
-      return out;
+      return list;
+    }
+
+    var list = [];
+
+    function icons() {
+      return $menu ? $menu.find(".icon") : $();
     }
 
     function paint() {
       if (!$menu) {
         return;
       }
-      var open = XTV.state.layer === "menu";
-      $menu.toggleClass("open", open);
-      $("body").toggleClass("xtv-menu-open", open);
-      $menu.find(".xn-item").each(function (i) {
-        var $it = $(this);
-        $it.toggleClass("onFocus", open && i === index);
-        $it.toggleClass("current", list[i] && list[i].id === current);
-      });
+      var active = XTV.state.layer === "menu";
+      $menu.toggleClass("newMenuActive", active);
+      $menu.find(".menuTitle").css("display", active ? "block" : "none");
+      icons().removeClass("onFocus");
+      if (active) {
+        icons().eq(index).addClass("onFocus");
+      }
     }
 
     var menu = (XTV.menu = {
       build: function () {
-        $("#xtvMenu, #newMenu").remove();
+        $("#newMenu").remove();
         list = entries();
-        $menu = $(
-          '<nav id="xtvMenu" aria-label="Menú principal"><div class="xn-scrim"></div><div class="xn-panel"></div><div class="xn-rail"></div><div class="xn-items"></div></nav>'
-        );
-        var $items = $menu.find(".xn-items");
+        var html = "";
         for (var i = 0; i < list.length; i++) {
-          var $it = $('<button type="button" class="xn-item"></button>').attr("data-index", i);
-          if (list[i].group) {
-            $it.addClass("group");
-          }
-          $it.append('<span class="xn-bar"></span>');
-          $it.append(XTV.icon(list[i].icon, "xn-icon"));
-          $it.append($('<span class="xn-label"></span>').text(list[i].text));
-          $items.append($it);
+          html +=
+            '<img src="' +
+            util.esc(C.IMG + list[i].img) +
+            '" class="icon" id="' +
+            list[i].id +
+            '" data-index="' +
+            i +
+            '" style="cursor:pointer">' +
+            '<p class="menuTitle" data-index="' +
+            i +
+            '">' +
+            util.esc(list[i].text) +
+            "</p>";
         }
-        $("body").append($menu);
+        $menu = $('<div id="newMenu">' + html + "</div>");
+        if ($("#result").length) {
+          $("#result").after($menu);
+        } else {
+          $("body").append($menu);
+        }
 
-        // Puntero: pasar por un ítem lo enfoca; salir del menú no lo cierra
-        // (un movimiento involuntario del control no cambia el foco).
-        $menu.on("mousemove", ".xn-item", function () {
+        // Puntero: pasar por un ícono lo enfoca; salir del menú no lo cierra
+        // (así un movimiento involuntario del control no cambia el foco).
+        $menu.on("mousemove", ".icon, .menuTitle", function () {
           if (!XTV.pointer.isActive()) {
             return;
           }
           var i = parseInt($(this).attr("data-index"), 10);
-          var layer = XTV.state.layer;
-          if ((layer === "grid" || layer === "menu") && !(layer === "menu" && i === index)) {
+          if ((XTV.state.layer === "grid" || XTV.state.layer === "menu") && !(XTV.state.layer === "menu" && i === index)) {
             menu.open(i);
           }
         });
-        $menu.on("click", ".xn-item", function () {
+        $menu.on("click", ".icon, .menuTitle", function () {
           var i = parseInt($(this).attr("data-index"), 10);
-          var layer = XTV.state.layer;
-          if (layer === "grid" || layer === "menu") {
+          if (XTV.state.layer === "grid" || XTV.state.layer === "menu") {
             index = i;
             menu.run();
           }
         });
-        // Con el puntero: salir del panel hacia el contenido cierra el menú
-        $menu.on("click mousemove", ".xn-scrim", function (e) {
-          if (e.type === "click" || (XTV.pointer.isActive() && e.clientX > $menu.find(".xn-panel").outerWidth())) {
-            menu.close();
-          }
-        });
-        paint();
-      },
-
-      // Sección actual (queda marcada con el menú cerrado)
-      setCurrent: function (id) {
-        current = id;
         paint();
       },
 
@@ -353,12 +343,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         }
         if (typeof focusIndex === "number") {
           index = focusIndex;
-        } else {
-          for (var i = 0; i < list.length; i++) {
-            if (list[i].id === current) {
-              index = i;
-            }
-          }
         }
         XTV.setLayer("menu");
         paint();

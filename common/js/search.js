@@ -17,9 +17,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
    *   resultados que ya hay y después se completan con la respuesta.
    * - Fila "Personas" (directores y elenco) armada a partir de los resultados.
    * - Búsquedas recientes guardadas en la TV.
-   * - Navegación por zonas (teclado, personas, películas, recientes) con
-   *   reglas explícitas: en las listas, derecha/izquierda avanzan en orden
-   *   y pasan de fila; no se navega por cercanía en pantalla.
+   * - "Teclado TV" abre el teclado del sistema (puntero de LG, teclado USB).
    *
    * ES5 puro.
    */
@@ -38,14 +36,14 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         "G", "H", "I", "J", "K", "L",
         "M", "N", "Ñ", "O", "P", "Q",
         "R", "S", "T", "U", "V", "W",
-        "X", "Y", "Z", { a: "mode", label: "123" }, { a: "del", label: "Borrar", w: 2 },
-        { a: "space", label: "Espacio", w: 3 }, { a: "clear", label: "Vaciar", w: 3 }
+        "X", "Y", "Z", { a: "mode", label: "123" }, { a: "del", label: "BORRAR", w: 2 },
+        { a: "space", label: "ESPACIO", w: 2 }, { a: "clear", label: "VACIAR", w: 2 }, { a: "ime", label: "TECLADO TV", w: 2 }
       ],
       num: [
         "1", "2", "3", "4", "5", "6",
         "7", "8", "9", "0", "-", ".",
-        { a: "mode", label: "ABC", w: 2 }, { a: "del", label: "Borrar", w: 2 }, { a: "clear", label: "Vaciar", w: 2 },
-        { a: "space", label: "Espacio", w: 6 }
+        { a: "mode", label: "ABC", w: 2 }, { a: "del", label: "BORRAR", w: 2 }, { a: "clear", label: "VACIAR", w: 2 },
+        { a: "space", label: "ESPACIO", w: 3 }, { a: "ime", label: "TECLADO TV", w: 3 }
       ]
     };
 
@@ -63,7 +61,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       person: null,
       items: [], // resultados mostrados
       focus: null,
-      lastKey: null,
+      ime: false,
       gen: 0,
       shownFor: null
     };
@@ -398,17 +396,13 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       if (people.length) {
         html += '<p class="xs-label">Personas</p><div class="xs-people">';
         for (var i = 0; i < people.length; i++) {
-          var ini = people[i].name.split(/\s+/);
-          ini = (ini[0] ? ini[0].charAt(0) : "") + (ini.length > 1 ? ini[ini.length - 1].charAt(0) : "");
           html +=
             '<div class="xs-person xs-f" data-person="' +
             i +
-            '"><span class="xs-ini">' +
-            util.esc(ini.toUpperCase()) +
-            "</span>" +
+            '">' +
             util.esc(people[i].name) +
             '<span class="role">' +
-            (people[i].role === "Director" ? "Dirección" : "Elenco") +
+            (people[i].role === "Director" ? "Director" : "Elenco") +
             "</span></div>";
         }
         html += "</div>";
@@ -454,16 +448,11 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       });
     }
 
-    function posterLoaded() {
-      this.className = "ok";
-    }
-
     function loadPosters(upTo) {
       var imgs = $body.find(".xs-movie img");
       var limit = Math.max(upTo + 10, 10);
       for (var i = 0; i < imgs.length && i < limit; i++) {
         if (!imgs[i].getAttribute("src") && state.items[i] && state.items[i].poster) {
-          imgs[i].onload = posterLoaded;
           imgs[i].setAttribute("src", state.items[i].poster);
         }
       }
@@ -472,132 +461,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     /* ======================================================================
      * Foco
      * ==================================================================== */
-    function zoneOf(el) {
-      var $el = $(el);
-      if ($el.hasClass("xs-key")) {
-        return "keys";
-      }
-      if ($el.hasClass("xs-person")) {
-        return "people";
-      }
-      if ($el.hasClass("xs-movie")) {
-        return "movies";
-      }
-      if ($el.hasClass("xs-recent")) {
-        return "recent";
-      }
-      return null;
-    }
-
-    function zoneItems(zone) {
-      if (!$root) {
-        return [];
-      }
-      var sel = { keys: ".xs-key", people: ".xs-person", movies: ".xs-movie", recent: ".xs-recent" }[zone];
-      return $root.find(sel).get();
-    }
-
-    function backToKeys() {
-      var k = state.lastKey && $.contains(document.documentElement, state.lastKey) ? state.lastKey : null;
-      focus(k || $keys.find(".xs-key").get(0));
-    }
-
-    // Primer elemento de los resultados (personas, películas o recientes)
-    function firstResult() {
-      return zoneItems("people")[0] || zoneItems("movies")[0] || zoneItems("recent")[0] || null;
-    }
-
-    // Columnas de la grilla de películas según su posición real
-    function movieColumns(list) {
-      if (!list.length) {
-        return 1;
-      }
-      var top = list[0].offsetTop;
-      var n = 0;
-      while (n < list.length && list[n].offsetTop === top) {
-        n++;
-      }
-      return Math.max(1, n);
-    }
-
-    function navigate(action) {
-      var el = state.focus;
-      var zone = zoneOf(el);
-      if (zone === "keys") {
-        var next = XTV.nav.pick($(zoneItems("keys")), el, action);
-        if (next) {
-          focus(next);
-        } else if (action === "RIGHT") {
-          var first = firstResult();
-          if (first) {
-            focus(first);
-          }
-        }
-        return;
-      }
-      var list = zoneItems(zone);
-      var i = $.inArray(el, list);
-      if (zone === "people") {
-        if (action === "RIGHT") {
-          if (i < list.length - 1) {
-            focus(list[i + 1]);
-          } else if (zoneItems("movies").length) {
-            focus(zoneItems("movies")[0]);
-          }
-        } else if (action === "LEFT") {
-          if (i > 0) {
-            focus(list[i - 1]);
-          } else {
-            backToKeys();
-          }
-        } else if (action === "DOWN") {
-          if (zoneItems("movies").length) {
-            focus(zoneItems("movies")[0]);
-          }
-        }
-        return;
-      }
-      if (zone === "movies") {
-        var cols = movieColumns(list);
-        if (action === "RIGHT") {
-          if (i < list.length - 1) {
-            focus(list[i + 1]);
-          }
-        } else if (action === "LEFT") {
-          if (i > 0) {
-            focus(list[i - 1]);
-          } else {
-            backToKeys();
-          }
-        } else if (action === "DOWN") {
-          if (i + cols < list.length) {
-            focus(list[i + cols]);
-          } else if (Math.floor(i / cols) < Math.floor((list.length - 1) / cols)) {
-            focus(list[list.length - 1]);
-          }
-        } else if (action === "UP") {
-          if (i - cols >= 0) {
-            focus(list[i - cols]);
-          } else {
-            var people = zoneItems("people");
-            if (people.length) {
-              focus(state.lastPerson && $.inArray(state.lastPerson, people) !== -1 ? state.lastPerson : people[0]);
-            }
-          }
-        }
-        return;
-      }
-      if (zone === "recent") {
-        if (action === "DOWN" && i < list.length - 1) {
-          focus(list[i + 1]);
-        } else if (action === "UP" && i > 0) {
-          focus(list[i - 1]);
-        } else if (action === "LEFT") {
-          backToKeys();
-        }
-        return;
-      }
-      backToKeys();
+    function focusables() {
+      return $root ? $root.find(".xs-f") : $();
     }
 
     function focus(el) {
@@ -609,12 +474,6 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
       state.focus = el;
       $(el).addClass("onFocus");
-      var zone = zoneOf(el);
-      if (zone === "keys") {
-        state.lastKey = el;
-      } else if (zone === "people") {
-        state.lastPerson = el;
-      }
       ensureVisible(el);
       var idx = $(el).attr("data-movie");
       if (idx !== undefined) {
@@ -686,6 +545,25 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       }
     }
 
+    function startIme() {
+      state.ime = true;
+      $input.prop("readOnly", false).addClass("ime");
+      $input.get(0).focus();
+      try {
+        var len = $input.val().length;
+        $input.get(0).setSelectionRange(len, len);
+      } catch (e) {}
+    }
+
+    function stopIme() {
+      if (!state.ime) {
+        return;
+      }
+      state.ime = false;
+      $input.prop("readOnly", true).removeClass("ime");
+      $input.get(0).blur();
+    }
+
     function activate(el) {
       var $el = $(el);
       if ($el.attr("data-k") !== undefined) {
@@ -706,6 +584,8 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
           state.mode = state.mode === "alpha" ? "num" : "alpha";
           renderKeys();
           focus($keys.find('[data-a="mode"]').get(0));
+        } else if (a === "ime") {
+          startIme();
         }
         return;
       }
@@ -745,10 +625,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     function build() {
       $root = $(
         '<div id="xtvSearch">' +
-          '<div class="xs-left"><div class="xs-title">BUSCAR</div><div class="xs-field">' +
-          '<span class="xs-sicon">' + XTV.icon("search", "") + "</span>" +
-          '<input id="xsInput" class="xs-input" readonly tabindex="-1" maxlength="35" autocomplete="off" spellcheck="false"></div>' +
-          '<div class="xs-keys"></div><div class="xs-tip">Los números del control también escriben</div></div>' +
+          '<div class="xs-left"><div class="xs-title">BUSCAR</div>' +
+          '<input id="xsInput" class="xs-input" readonly maxlength="35" autocomplete="off" spellcheck="false">' +
+          '<div class="xs-keys"></div></div>' +
           '<div class="xs-right"><img class="xs-logo" alt="Xiclos" src="' +
           util.esc(C.IMG + "logo.png") +
           '"><div class="xs-status"></div><div class="xs-body"></div></div>' +
@@ -758,6 +637,20 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       $keys = $root.find(".xs-keys");
       $status = $root.find(".xs-status");
       $body = $root.find(".xs-body");
+
+      // Teclado del sistema
+      $input.on("input", function () {
+        if (state.ime) {
+          state.query = String($input.val() || "").substring(0, 35);
+          queryChanged();
+        }
+      });
+      $input.on("blur", function () {
+        if (state.ime) {
+          state.ime = false;
+          $input.prop("readOnly", true).removeClass("ime");
+        }
+      });
 
       // Puntero
       $root.on("mousemove", ".xs-f", function () {
@@ -770,6 +663,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         focus(this);
         activate(this);
       });
+      $root.on("click", "#xsInput", function () {
+        startIme();
+      });
     }
 
     function open(prefill) {
@@ -781,20 +677,16 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       state.open = true;
       state.mode = "alpha";
       state.focus = null;
-      state.lastKey = null;
-      state.lastPerson = null;
       state.view = "recent";
       state.person = null;
       renderKeys();
       XTV.setLayer("search");
-      if (XTV.menu && XTV.menu.setCurrent) {
-        XTV.menu.setCurrent("buscar");
-      }
       focus($keys.find(".xs-key").get(0));
       setQuery(prefill || "", !!prefill);
     }
 
     function close() {
+      stopIme();
       scheduled.cancel();
       XTV.api.abort("suggest");
       state.gen++;
@@ -809,8 +701,25 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     }
 
     function handleKey(action) {
+      if (state.ime) {
+        if (action === "LEFT" || action === "RIGHT" || action === "SPACE") {
+          return false; // mueven el cursor / escriben en el campo
+        }
+        if (action === "OK" || action === "DONE" || action === "CANCEL" || action === "BACK") {
+          stopIme();
+          return true;
+        }
+        if (action === "UP" || action === "DOWN") {
+          stopIme();
+        } else {
+          return false;
+        }
+      }
       if (XTV.keys.isNav(action)) {
-        navigate(action);
+        var next = XTV.nav.pick(focusables(), state.focus, action);
+        if (next) {
+          focus(next);
+        }
         return true;
       }
       if (action === "OK") {

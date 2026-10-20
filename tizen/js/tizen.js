@@ -67,14 +67,13 @@
       callback(info);
     },
 
-    // "Salir": cierra la app (antes solo la ocultaba y al volver a abrirla
-    // aparecía donde había quedado)
+    // "Salir": deja la app en segundo plano, como antes
     exit: function () {
       try {
-        window.tizen.application.getCurrentApplication().exit();
+        window.tizen.application.getCurrentApplication().hide();
       } catch (e) {
         try {
-          window.tizen.application.getCurrentApplication().hide();
+          window.tizen.application.getCurrentApplication().exit();
         } catch (e2) {}
       }
     },
