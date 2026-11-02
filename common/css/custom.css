@@ -3679,3 +3679,191 @@ body.xtv #modal .xl-loader-note {
   font-size: 1.25vw;
   color: #D4D4D8;
 }
+
+/* ---------------------------------------------------------------
+ * Ingreso con mail y contraseña (v2.12)
+ * Reemplaza la columna derecha de "Activá Xiclos en tu TV" (el código
+ * para la web y la app). Mismo lenguaje: Atkinson, letra grande.
+ * --------------------------------------------------------------- */
+body.xtv #modalPin.xl-has-mail .xl-box {
+  width: 90vw;
+}
+body.xtv #modalPin.xl-has-mail .xl-title {
+  margin-bottom: 2.4vw;
+}
+body.xtv #modalPin.xl-has-mail .xl-cols {
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+}
+body.xtv #modalPin.xl-has-mail .xl-qr-col {
+  margin-top: 4vw;
+}
+body.xtv #modalPin.xl-has-mail .xl-qr {
+  width: 22vw;
+  height: 22vw;
+}
+body.xtv #modalPin.xl-has-mail .xl-or {
+  height: 30vw;
+  margin: 2vw 3.2vw 0;
+}
+body.xtv #modalPin.xl-has-mail .xl-or span {
+  margin-top: -1.1vw;
+}
+body.xtv #modalPin .xl-alt-mail {
+  width: 50vw;
+}
+body.xtv #modalPin.xl-has-mail .xl-alt-h {
+  margin-bottom: 1.2vw;
+  font-size: 2.3vw;
+}
+body.xtv #modalPin.xl-has-mail .xl-foot {
+  margin-top: 1.6vw;
+}
+body.xtv #modalPin .xm-lbl {
+  margin: 0 0 0.4vw;
+  font-size: 1.15vw;
+  font-weight: 700;
+  letter-spacing: 0.12vw;
+  color: #B4B4BB;
+}
+body.xtv #modalPin .xm-lbl.xm-on {
+  color: #FFFFFF;
+}
+body.xtv #modalPin .xm-field {
+  position: relative;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  height: 3.7vw;
+  margin-bottom: 1vw;
+  padding: 0 1.1vw;
+  box-sizing: border-box;
+  border-radius: 0.5vw;
+  background: #18181B;
+  border: 0.16vw solid #3A3A42;
+  font-size: 1.8vw;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+body.xtv #modalPin .xm-field.xm-active {
+  border-color: #EB564A;
+}
+body.xtv #modalPin .xm-field.onFocus {
+  border-color: #FFFFFF;
+  box-shadow: 0 0 0 0.25vw rgba(255, 255, 255, 0.25);
+}
+body.xtv #modalPin .xm-val {
+  overflow: hidden;
+}
+body.xtv #modalPin .xm-caret {
+  display: none;
+  -webkit-flex: none;
+  flex: none;
+  width: 0.16vw;
+  height: 2vw;
+  margin-left: 0.15vw;
+  background: #EB564A;
+}
+body.xtv #modalPin .xm-field.xm-active .xm-caret {
+  display: block;
+}
+body.xtv #modalPin .xm-show {
+  -webkit-flex: none;
+  flex: none;
+  margin-left: auto;
+  padding: 0.35vw 0.9vw;
+  border-radius: 0.4vw;
+  background: #2A2A30;
+  color: #D4D4D8;
+  font-size: 1.2vw;
+}
+body.xtv #modalPin .xm-show.onFocus {
+  background: #D23F35;
+  color: #FFFFFF;
+}
+body.xtv #modalPin .xm-status {
+  min-height: 1.9vw;
+  margin: -0.2vw 0 0.4vw;
+  font-size: 1.4vw;
+  line-height: 1.3;
+}
+body.xtv #modalPin .xm-status.xm-err {
+  color: #FFD27A;
+}
+body.xtv #modalPin .xm-status.xm-info {
+  color: #FFFFFF;
+}
+body.xtv #modalPin .xm-note {
+  margin-top: 0.6vw;
+  font-size: 1.25vw;
+  line-height: 1.35;
+  color: #B4B4BB;
+}
+body.xtv #modalPin .xm-note b {
+  color: #FFFFFF;
+}
+body.xtv #modalPin .xm-keys {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: 0 -0.25vw;
+}
+body.xtv #modalPin .xm-k {
+  position: relative;
+  z-index: 0;
+  width: 10%;
+  height: 3.3vw;
+  box-sizing: border-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  font-size: 1.6vw;
+  font-weight: 700;
+  color: #E4E4E7;
+  cursor: pointer;
+}
+body.xtv #modalPin .xm-k:before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0.25vw;
+  left: 0.25vw;
+  right: 0.25vw;
+  bottom: 0.25vw;
+  border-radius: 0.4vw;
+  background: #222227;
+}
+body.xtv #modalPin .xm-k-fn {
+  font-size: 1.2vw;
+  color: #D4D4D8;
+}
+body.xtv #modalPin .xm-k-fn:before {
+  background: #2A2A30;
+}
+body.xtv #modalPin .xm-w2 { width: 20%; }
+body.xtv #modalPin .xm-w3 { width: 30%; }
+body.xtv #modalPin .xm-w4 { width: 40%; }
+body.xtv #modalPin .xm-k-go {
+  font-size: 1.4vw;
+  color: #FFFFFF;
+}
+body.xtv #modalPin .xm-k-go:before {
+  background: rgba(235, 86, 74, 0.35);
+}
+body.xtv #modalPin .xm-k.onFocus {
+  color: #FFFFFF;
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+}
+body.xtv #modalPin .xm-k.onFocus:before {
+  background: #D23F35;
+}
+body.xtv #modalPin .xm-form.xm-busy .xm-keys {
+  opacity: 0.5;
+}

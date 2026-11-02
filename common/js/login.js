@@ -1338,26 +1338,33 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         ensureFont();
         var host = C.SYNC_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
         $modal = $(
-          '<div id="modalPin" class="xl">' +
+          '<div id="modalPin" class="xl' + (C.MAIL_LOGIN ? " xl-has-mail" : "") + '">' +
             '<div class="xl-box">' +
             '<h1 class="xl-title">Activá Xiclos en tu TV</h1>' +
             '<div class="xl-cols">' +
             '<div class="xl-qr-col"><div class="xl-qr"></div><div class="xl-qr-cap">Escaneá con tu celular</div></div>' +
             '<div class="xl-or"><span>o</span></div>' +
-            '<div class="xl-alt">' +
+            (C.MAIL_LOGIN
+              ? '<div class="xl-alt xl-alt-mail"></div>'
+              : '<div class="xl-alt">' +
             '<div class="xl-alt-h">¿No podés escanear?</div>' +
             '<div class="xl-way"><div class="xl-lbl">En la web</div>Entrá a <span class="xl-url">' + util.esc(host) + "</span></div>" +
             '<div class="xl-way"><div class="xl-lbl">En la app de Xiclos</div>Menú ' + MENU_ICON + ' <span class="xl-arrow">→</span> <b>Sincronizar</b></div>' +
             '<div class="xl-way xl-then">Y escribí este código:</div>' +
             '<div class="xl-code" id="pin"></div>' +
+            "</div>") +
             "</div>" +
-            "</div>" +
-            '<div class="xl-foot"><div class="xl-foot-1">La TV se activa sola en unos segundos.</div>' +
-            '<div class="xl-foot-2">El código cambia cada minuto.</div></div>' +
+            (C.MAIL_LOGIN
+              ? '<div class="xl-foot"><div class="xl-foot-2">El código QR cambia cada minuto. Si escaneás, la TV se activa sola.</div></div>'
+              : '<div class="xl-foot"><div class="xl-foot-1">La TV se activa sola en unos segundos.</div>' +
+                '<div class="xl-foot-2">El código cambia cada minuto.</div></div>') +
             "</div>" +
             "</div>"
         );
         $("body").append($modal);
+        if (C.MAIL_LOGIN) {
+          mail.mount($modal.find(".xl-alt-mail"));
+        }
       }
       // QR y código solo se redibujan cuando cambia el código
       if ($modal.attr("data-code") !== String(pinState.pin)) {
@@ -1522,10 +1529,620 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
         });
     }
 
+    /* ----------------------------------------------------------------------
+     * Ingreso con mail y contraseña (v2.12)
+     *
+     * Hace lo mismo que la web cuando se abre el QR estando logueado:
+     *   1. Login de Firebase (accounts:signInWithPassword) -> token + ID
+     *   2. Datos del usuario (admin/user/<ID>) -> encabezado U
+     *   3. sync-device con el código del PIN que muestra esta TV
+     * Después el sondeo de checkPin detecta la vinculación como siempre.
+     * La contraseña y el token se usan una vez y se descartan: la TV sigue
+     * guardando solo el ud_id.
+     * -------------------------------------------------------------------- */
+    var mail = (function () {
+      var LAYOUTS = {
+        lower: [
+          "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+          "k", "l", "m", "n", "ñ", "o", "p", "q", "r", "s",
+          "t", "u", "v", "w", "x", "y", "z", ".", "-", "_",
+          { a: "shift", label: "Mayús", w: 2 }, { a: "mode", label: "123 #", w: 2 }, "@",
+          { a: "text", v: ".com", label: ".com", w: 2 }, { a: "text", v: "@gmail.com", label: "@gmail.com", w: 3 },
+          { a: "del", label: "Borrar", w: 3 }, { a: "clear", label: "Vaciar", w: 3 }, { a: "go", w: 4 }
+        ],
+        upper: [
+          "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+          "K", "L", "M", "N", "Ñ", "O", "P", "Q", "R", "S",
+          "T", "U", "V", "W", "X", "Y", "Z", ".", "-", "_",
+          { a: "shift", label: "minús", w: 2 }, { a: "mode", label: "123 #", w: 2 }, "@",
+          { a: "text", v: ".com", label: ".com", w: 2 }, { a: "text", v: "@gmail.com", label: "@gmail.com", w: 3 },
+          { a: "del", label: "Borrar", w: 3 }, { a: "clear", label: "Vaciar", w: 3 }, { a: "go", w: 4 }
+        ],
+        sym: [
+          "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+          "!", "#", "$", "%", "&", "*", "?", "/", "=", "+",
+          "(", ")", "[", "]", "{", "}", "<", ">", "~", "^",
+          { a: "mode", label: "ABC", w: 2 }, "@", ".", "-", "_", ";", ":", ",", "'",
+          { a: "del", label: "Borrar", w: 3 }, { a: "clear", label: "Vaciar", w: 3 }, { a: "go", w: 4 }
+        ]
+      };
+      var MAX_LEN = 80;
+
+      var $root = null;
+      var st = null; // { email, pass, field, mode, show, focus, busy, gen }
+
+      function keyHtml(k) {
+        if (typeof k === "string") {
+          return '<div class="xm-k xm-f" data-ch="' + util.esc(k) + '">' + util.esc(k) + "</div>";
+        }
+        var cls = "xm-k xm-f xm-k-fn xm-w" + (k.w || 1);
+        if (k.a === "go") {
+          return '<div class="' + cls + ' xm-k-go" data-a="go"></div>';
+        }
+        return (
+          '<div class="' + cls + '" data-a="' + k.a + '"' + (k.v ? ' data-v="' + util.esc(k.v) + '"' : "") + ">" +
+          util.esc(k.label) +
+          "</div>"
+        );
+      }
+
+      function build() {
+        $root = $(
+          '<div class="xm-form">' +
+            '<div class="xl-alt-h">O ingresá con tu mail</div>' +
+            '<div class="xm-lbl" data-for="email">MAIL</div>' +
+            '<div class="xm-field xm-f" data-field="email"><span class="xm-val"></span><span class="xm-caret"></span></div>' +
+            '<div class="xm-lbl" data-for="pass">CONTRASEÑA</div>' +
+            '<div class="xm-field xm-f" data-field="pass"><span class="xm-val"></span><span class="xm-caret"></span>' +
+            '<span class="xm-show xm-f" data-a="show">Mostrar</span></div>' +
+            '<div class="xm-status" role="status"></div>' +
+            '<div class="xm-keys"></div>' +
+            '<div class="xm-note">Los números del control también escriben. ¿Entrás con Google o Facebook? Escaneá el QR.</div>' +
+            '<div class="xm-note">¿Olvidaste tu contraseña? Recuperala en <b>' + util.esc(C.PASSWORD_HELP_HOST) + "</b></div>" +
+            "</div>"
+        );
+        $root.on("mousemove", ".xm-f", function () {
+          if (XTV.pointer.isActive() && st && st.focus !== this) {
+            focus(this);
+          }
+        });
+        $root.on("click", ".xm-f", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          focus(this);
+          activate(this);
+        });
+      }
+
+      function renderKeys() {
+        var list = LAYOUTS[st.mode];
+        var html = "";
+        for (var i = 0; i < list.length; i++) {
+          html += keyHtml(list[i]);
+        }
+        $root.find(".xm-keys").html(html);
+        renderGo();
+      }
+
+      function renderGo() {
+        $root.find(".xm-k-go").text(st.field === "email" ? "Siguiente" : "Ingresar");
+      }
+
+      // Un texto largo se muestra desde el final (lo último que se escribió)
+      function tail(text, max) {
+        return text.length > max ? "…" + text.slice(text.length - max + 1) : text;
+      }
+
+      function renderFields() {
+        var masked = "";
+        for (var i = 0; i < st.pass.length; i++) {
+          masked += "•";
+        }
+        var $e = $root.find('[data-field="email"]');
+        var $p = $root.find('[data-field="pass"]');
+        $e.find(".xm-val").text(tail(st.email || "", 24));
+        $p.find(".xm-val").text(tail(st.show ? st.pass : masked, 20));
+        $e.toggleClass("xm-empty", !st.email).toggleClass("xm-active", st.field === "email");
+        $p.toggleClass("xm-empty", !st.pass).toggleClass("xm-active", st.field === "pass");
+        $root.find('[data-for="email"]').toggleClass("xm-on", st.field === "email");
+        $root.find('[data-for="pass"]').toggleClass("xm-on", st.field === "pass");
+        $root.find(".xm-show").text(st.show ? "Ocultar" : "Mostrar");
+        renderGo();
+      }
+
+      function status(text, kind) {
+        var $s = $root.find(".xm-status");
+        $s.removeClass("xm-err xm-info");
+        if (!text) {
+          $s.text("");
+          return;
+        }
+        $s.text(text).addClass(kind === "info" ? "xm-info" : "xm-err");
+      }
+
+      function focus(el) {
+        if (!el) {
+          return;
+        }
+        $root.find(".xm-f.onFocus").removeClass("onFocus");
+        $(el).addClass("onFocus");
+        st.focus = el;
+      }
+
+      function firstKey() {
+        return $root.find(".xm-k").get(0);
+      }
+
+      function setField(name) {
+        st.field = name;
+        renderFields();
+      }
+
+      function current() {
+        return st.field === "email" ? st.email : st.pass;
+      }
+
+      function put(value) {
+        value = String(value).slice(0, MAX_LEN);
+        if (st.field === "email") {
+          st.email = value;
+        } else {
+          st.pass = value;
+        }
+        status("");
+        renderFields();
+      }
+
+      function type(text) {
+        if (st.busy) {
+          return;
+        }
+        var v = current();
+        if (st.field === "email") {
+          // En el mail no hay espacios ni mayúsculas que importen
+          text = String(text).replace(/\s/g, "");
+        }
+        put(v + text);
+        // Mayús vale para una sola letra, como en el celular
+        if (st.mode === "upper" && st.shiftOnce) {
+          st.shiftOnce = false;
+          st.mode = "lower";
+          var a = st.focus && $(st.focus).attr("data-ch");
+          renderKeys();
+          refocusKey(a);
+        }
+      }
+
+      function refocusKey(ch, action) {
+        var el = null;
+        if (action) {
+          el = $root.find('.xm-k[data-a="' + action + '"]').get(0);
+        } else if (ch) {
+          var lower = String(ch).toLowerCase();
+          $root.find(".xm-k[data-ch]").each(function () {
+            if (!el && String($(this).attr("data-ch")).toLowerCase() === lower) {
+              el = this;
+            }
+          });
+        }
+        focus(el || firstKey());
+      }
+
+      function activate(el) {
+        var $el = $(el);
+        var f = $el.attr("data-field");
+        if (f) {
+          setField(f);
+          focus(firstKey());
+          return;
+        }
+        var ch = $el.attr("data-ch");
+        if (ch !== undefined) {
+          type(ch);
+          return;
+        }
+        var a = $el.attr("data-a");
+        if (a === "text") {
+          type($el.attr("data-v"));
+        } else if (a === "del") {
+          put(current().slice(0, -1));
+        } else if (a === "clear") {
+          put("");
+        } else if (a === "shift") {
+          st.mode = st.mode === "upper" ? "lower" : "upper";
+          st.shiftOnce = st.mode === "upper";
+          renderKeys();
+          refocusKey(null, "shift");
+        } else if (a === "mode") {
+          st.mode = st.mode === "sym" ? "lower" : "sym";
+          st.shiftOnce = false;
+          renderKeys();
+          refocusKey(null, "mode");
+        } else if (a === "show") {
+          st.show = !st.show;
+          renderFields();
+        } else if (a === "go") {
+          go();
+        }
+      }
+
+      // Zonas: campos (arriba) y teclado (abajo). Dentro del teclado se
+      // navega por posición; entre zonas, con reglas fijas.
+      function navigate(action) {
+        var el = st.focus;
+        var $el = $(el);
+        var $email = $root.find('[data-field="email"]');
+        var $pass = $root.find('[data-field="pass"]');
+        var $show = $root.find(".xm-show");
+        if ($el.hasClass("xm-k")) {
+          // Izquierda/derecha: solo dentro de la misma fila (las teclas
+          // anchas confunden a la búsqueda por cercanía)
+          var $pool = $root.find(".xm-k");
+          if (action === "LEFT" || action === "RIGHT") {
+            var top = el.getBoundingClientRect().top;
+            $pool = $pool.filter(function () {
+              return Math.abs(this.getBoundingClientRect().top - top) < 2;
+            });
+          }
+          var next = XTV.nav.pick($pool, el, action);
+          if (next) {
+            focus(next);
+          } else if (action === "UP") {
+            focus($pass.get(0));
+          }
+          return;
+        }
+        if ($el.hasClass("xm-show")) {
+          if (action === "LEFT") {
+            focus($pass.get(0));
+          } else if (action === "UP") {
+            focus($email.get(0));
+          } else if (action === "DOWN") {
+            focus(nearestKey(el, true));
+          }
+          return;
+        }
+        if ($el.is($email)) {
+          if (action === "DOWN") {
+            focus($pass.get(0));
+          }
+          return;
+        }
+        // contraseña
+        if (action === "UP") {
+          focus($email.get(0));
+        } else if (action === "RIGHT") {
+          focus($show.get(0));
+        } else if (action === "DOWN") {
+          focus(nearestKey(el, false));
+        }
+      }
+
+      // Tecla de la primera fila más cercana en horizontal
+      // (rightSide: desde Mostrar, la más cercana a su posición)
+      function nearestKey(el, rightSide) {
+        var r = el.getBoundingClientRect();
+        var cx = rightSide ? r.left + r.width / 2 : r.left + r.width / 4;
+        var best = null;
+        var bestD = Infinity;
+        var minTop = Infinity;
+        $root.find(".xm-k").each(function () {
+          minTop = Math.min(minTop, this.getBoundingClientRect().top);
+        });
+        $root.find(".xm-k").each(function () {
+          var k = this.getBoundingClientRect();
+          if (Math.abs(k.top - minTop) > 2) {
+            return;
+          }
+          var d = Math.abs(k.left + k.width / 2 - cx);
+          if (d < bestD) {
+            bestD = d;
+            best = this;
+          }
+        });
+        return best || firstKey();
+      }
+
+      function validEmail(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      }
+
+      function go() {
+        if (st.busy) {
+          return;
+        }
+        if (st.field === "email") {
+          if (!validEmail(st.email)) {
+            status("Revisá el mail: tiene que ser como nombre@ejemplo.com");
+            return;
+          }
+          setField("pass");
+          return;
+        }
+        if (!validEmail(st.email)) {
+          setField("email");
+          status("Revisá el mail: tiene que ser como nombre@ejemplo.com");
+          return;
+        }
+        if (!st.pass) {
+          status("Escribí tu contraseña.");
+          return;
+        }
+        submit();
+      }
+
+      /* ---- Llamadas ---------------------------------------------------- */
+      function jsonPost(url, body, headers, scope) {
+        var xhr = $.ajax({
+          url: url,
+          type: "POST",
+          dataType: "json",
+          contentType: "application/json",
+          data: JSON.stringify(body),
+          headers: headers || {},
+          cache: false,
+          timeout: C.REQUEST_TIMEOUT_MS
+        });
+        return track(xhr, scope);
+      }
+
+      function track(xhr, scope) {
+        // Se cancela junto con el resto del ingreso si se cierra la pantalla
+        st.xhrs.push(xhr);
+        return xhr;
+      }
+
+      function abortAll() {
+        if (!st) {
+          return;
+        }
+        for (var i = 0; i < st.xhrs.length; i++) {
+          try {
+            st.xhrs[i].abort();
+          } catch (e) {}
+        }
+        st.xhrs = [];
+      }
+
+      function firebaseError(xhr) {
+        var msg = "";
+        try {
+          msg = (xhr && xhr.responseJSON && xhr.responseJSON.error && xhr.responseJSON.error.message) || "";
+        } catch (e) {}
+        return String(msg).split(" ")[0];
+      }
+
+      function deviceName() {
+        var n = (XTV.platform && XTV.platform.name) || "";
+        var names = { tizen: "Samsung TV", webos: "LG TV", amazon: "Fire TV", titan: "Philips TV", vidaa: "Hisense TV" };
+        return names[n] || "TV";
+      }
+
+      function fail(code, text, xhr, where, quiet) {
+        st.busy = false;
+        $root.removeClass("xm-busy");
+        status(text + " (Código: " + code + ")");
+        // Los errores del usuario (contraseña mal, demasiados intentos) no
+        // se registran. Nunca se manda el mail ni la contraseña al log.
+        if (!quiet) {
+          XTV.log.error("mail-" + where, xhr, { code: code });
+        }
+      }
+
+      function submit() {
+        var gen = ++st.gen;
+        st.busy = true;
+        $root.addClass("xm-busy");
+        status("Ingresando…", "info");
+        var email = st.email;
+        var pass = st.pass;
+
+        jsonPost(
+          C.FIREBASE_SIGNIN_URL + "?key=" + encodeURIComponent(C.FIREBASE_API_KEY),
+          { email: email, password: pass, returnSecureToken: true }
+        )
+          .done(function (res) {
+            if (!st || gen !== st.gen) {
+              return;
+            }
+            if (!res || !res.idToken || !res.localId) {
+              fail("XC-ACT-07", "No pudimos ingresar. Probá de nuevo o usá el código QR.", null, "signin-empty");
+              return;
+            }
+            // La contraseña ya no hace falta
+            st.pass = "";
+            fetchUser(gen, res.idToken, res.localId);
+          })
+          .fail(function (xhr, textStatus) {
+            if (!st || gen !== st.gen || XTV.api.isAbort(xhr, textStatus)) {
+              return;
+            }
+            var err = firebaseError(xhr);
+            if (err === "INVALID_LOGIN_CREDENTIALS" || err === "INVALID_PASSWORD" || err === "EMAIL_NOT_FOUND") {
+              fail("XC-ACT-04", "El mail o la contraseña no son correctos.", null, "signin-cred", true);
+            } else if (err === "INVALID_EMAIL") {
+              st.field = "email";
+              fail("XC-ACT-04", "Revisá el mail: no parece válido.", null, "signin-email", true);
+              renderFields();
+            } else if (err === "TOO_MANY_ATTEMPTS_TRY_LATER") {
+              fail("XC-ACT-05", "Demasiados intentos. Esperá unos minutos o usá el código QR.", null, "signin-many", true);
+            } else if (err === "USER_DISABLED") {
+              fail("XC-ACT-06", "Esta cuenta está deshabilitada. Escribinos a " + C.SUPPORT_EMAIL + ".", null, "signin-disabled", true);
+            } else if (!xhr || xhr.status === 0 || textStatus === "timeout") {
+              fail("XC-ACT-01", "No pudimos conectarnos. Revisá la conexión y probá de nuevo.", xhr, "signin-net");
+            } else {
+              fail("XC-ACT-07", "No pudimos ingresar. Probá de nuevo o usá el código QR.", xhr, "signin-" + (err || xhr.status));
+            }
+          });
+      }
+
+      function fetchUser(gen, token, uid) {
+        track(
+          $.ajax({
+            url: P.webUser + encodeURIComponent(uid),
+            type: "GET",
+            dataType: "json",
+            headers: { Authorization: token },
+            cache: false,
+            timeout: C.REQUEST_TIMEOUT_MS
+          })
+        )
+          .done(function (res) {
+            if (!st || gen !== st.gen) {
+              return;
+            }
+            var user = res && res.data ? res.data : res;
+            if (!user || !user.us_id) {
+              fail("XC-ACT-07", "No pudimos ingresar. Probá de nuevo o usá el código QR.", null, "user-empty");
+              return;
+            }
+            linkDevice(gen, token, user);
+          })
+          .fail(function (xhr, textStatus) {
+            if (!st || gen !== st.gen || XTV.api.isAbort(xhr, textStatus)) {
+              return;
+            }
+            fail("XC-ACT-07", "No pudimos ingresar. Probá de nuevo o usá el código QR.", xhr, "user");
+          });
+      }
+
+      function linkDevice(gen, token, user) {
+        var code = pinState && pinState.pin ? String(pinState.pin).toLowerCase() : "";
+        if (!code) {
+          fail("XC-ACT-07", "No pudimos vincular esta TV. Probá de nuevo en unos segundos.", null, "sync-nocode");
+          return;
+        }
+        jsonPost(P.syncDevice, { code: code, name: deviceName() }, { Authorization: token, U: JSON.stringify(user) })
+          .done(function (res) {
+            if (!st || gen !== st.gen) {
+              return;
+            }
+            if (!res || res.success === false) {
+              fail("XC-ACT-07", "No pudimos vincular esta TV. Probá de nuevo o usá el código QR.", null, "sync-false");
+              return;
+            }
+            status("¡Listo! Entrando…", "info");
+            confirmLinked(gen, 0);
+          })
+          .fail(function (xhr, textStatus) {
+            if (!st || gen !== st.gen || XTV.api.isAbort(xhr, textStatus)) {
+              return;
+            }
+            fail("XC-ACT-07", "No pudimos vincular esta TV. Probá de nuevo o usá el código QR.", xhr, "sync");
+          });
+      }
+
+      // La vinculación ya está hecha: se pregunta a checkPin enseguida en
+      // lugar de esperar el próximo sondeo (hasta 3 intentos)
+      function confirmLinked(gen, attempt) {
+        if (!pinState || !pinState.id) {
+          return;
+        }
+        XTV.api
+          .request({ method: "POST", url: P.checkPin, data: { id: pinState.id }, scope: "pin", auth: false })
+          .done(function (res) {
+            if (!st || gen !== st.gen) {
+              return;
+            }
+            var data = res && res.data;
+            if (data && data.User) {
+              loggedIn(data);
+            } else if (attempt < 2) {
+              setTimeout(function () {
+                confirmLinked(gen, attempt + 1);
+              }, 1500);
+            } else {
+              fail("XC-ACT-07", "La TV se vinculó pero no pudimos entrar. Esperá unos segundos.", null, "confirm");
+            }
+          })
+          .fail(function (xhr, textStatus) {
+            if (!st || gen !== st.gen || XTV.api.isAbort(xhr, textStatus)) {
+              return;
+            }
+            if (attempt < 2) {
+              setTimeout(function () {
+                confirmLinked(gen, attempt + 1);
+              }, 1500);
+            } else {
+              fail("XC-ACT-03", "No pudimos verificar. Volvé a intentar en unos segundos.", xhr, "confirm");
+            }
+          });
+      }
+
+      /* ---- Montar / desmontar ----------------------------------------- */
+      // El formulario vive en la columna derecha de "Activá Xiclos en tu TV"
+      function mount($container) {
+        if (!$root) {
+          build();
+        }
+        st = { email: "", pass: "", field: "email", mode: "lower", show: false, focus: null, busy: false, gen: 0, xhrs: [] };
+        $container.empty().append($root);
+        renderKeys();
+        renderFields();
+        status("");
+        focus(firstKey());
+      }
+
+      function destroy() {
+        abortAll();
+        if (st) {
+          st.gen++;
+          st.pass = "";
+        }
+        st = null;
+        if ($root) {
+          $root.remove();
+          $root = null;
+        }
+      }
+
+      function handleKey(action) {
+        if (XTV.keys.isNav(action)) {
+          navigate(action);
+          return true;
+        }
+        if (action === "OK") {
+          if (st.focus) {
+            activate(st.focus);
+          }
+          return true;
+        }
+        if (action === "BACK") {
+          // Igual que antes en esta pantalla: pregunta si sale de la app.
+          // Si está ingresando, primero lo cancela.
+          if (st.busy) {
+            abortAll();
+            st.gen++;
+            st.busy = false;
+            $root.removeClass("xm-busy");
+            status("");
+            return true;
+          }
+          XTV.actions.confirmExit();
+          return true;
+        }
+        if (action && /^D\d$/.test(action)) {
+          type(action.charAt(1));
+          return true;
+        }
+        return action === "SPACE";
+      }
+
+      return {
+        mount: mount,
+        destroy: destroy,
+        handleKey: handleKey,
+        isOpen: function () {
+          return !!st;
+        }
+      };
+    })();
+
     function loggedIn(syncUserDevice) {
       clearPinTimers();
       pinState = null;
       XTV.api.abort("pin");
+      mail.destroy();
       $("#modalPin").remove();
       XTV.session.set(syncUserDevice);
       XTV.app.enterMain();
@@ -1551,6 +2168,9 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       },
 
       handleKey: function (action) {
+        if (mail.isOpen()) {
+          return mail.handleKey(action);
+        }
         if (action === "OK") {
           checkLinkDevice(true);
           return true;

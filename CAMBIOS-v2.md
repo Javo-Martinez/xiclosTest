@@ -45,6 +45,21 @@ Todo el JavaScript es ES5 (validado con un parser en modo ES5) y funciona con jQ
 
 `common/legacy/` tiene **la versión anterior tal como estaba en el primer commit del repo** (menú como tira "OPCIONES", que es lo que maneja `amazon/js/spatial.js`). Si Amazon corre hoy otra versión en producción, reemplacen el contenido de esa carpeta por los archivos exactos que usa hoy. El mecanismo no depende del contenido.
 
+## v2.12: ingreso con mail y contraseña
+
+Archivos: `common/js/login.js`, `common/js/config.js`, `common/css/custom.css`. No cambian los `index.html` ni el backend.
+
+- En "Activá Xiclos en tu TV" el QR queda a la izquierda y **la columna derecha pasa a ser el ingreso con mail y contraseña** (reemplaza a "¿No podés escanear?" con la web, la app y el código). El QR y el sondeo de `checkPin` siguen andando.
+- Teclado propio (sin `<input>`, así no se abre el teclado del sistema): minúsculas, Mayús (para una letra), `123 #` con símbolos, `@`, `.com`, `@gmail.com`, Borrar, Vaciar y Siguiente/Ingresar. Los números del control también escriben. Mostrar/Ocultar contraseña. Volver pregunta si sale de la app, como antes.
+- Hace lo mismo que la web cuando se abre el QR estando logueado:
+  1. Login de Firebase `accounts:signInWithPassword` (clave pública de la web en `FIREBASE_API_KEY`).
+  2. `GET …/api/api/admin/user/<ID de Firebase>` para armar el encabezado `U`.
+  3. `POST …/api/api/sync-device` con `{code, name}` (código del PIN en minúsculas) y `Authorization` con el token.
+  4. `checkPin` detecta la vinculación y la app entra.
+- La contraseña y el token se usan una vez y se descartan. La TV sigue guardando solo el `ud_id`.
+- Mensajes nuevos: `XC-ACT-04` mail o contraseña incorrectos, `XC-ACT-05` demasiados intentos, `XC-ACT-06` cuenta deshabilitada, `XC-ACT-07` no se pudo ingresar o vincular. Sin conexión usa `XC-ACT-01`. Los errores del usuario (04, 05, 06) no se registran en el log; el resto sí, sin mail ni contraseña.
+- Se apaga con `MAIL_LOGIN: false` en `config.js` (vuelve la pantalla anterior con el código).
+
 ## v2.11: OK pausa en el acto
 
 Cambia `common/js/JCPlayer.js`.

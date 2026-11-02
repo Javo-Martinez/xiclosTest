@@ -59,6 +59,18 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     SYNC_PARAM: "codigo",
     PIN_POLL_SECONDS: 10,
 
+    // Ingreso con mail y contraseña (v2.12)
+    // Usa el mismo camino que la web: login de Firebase, datos del usuario
+    // y vinculación del código del PIN (sync-device). No cambia el backend.
+    MAIL_LOGIN: true,
+    // Clave pública de Firebase de la web (no es secreta: es la que va en la
+    // URL de accounts:signInWithPassword que usa xiclos.com)
+    FIREBASE_API_KEY: "AIzaSyBj7FMZbQQMefO9vEAYN9lPkeFNzzQNdfA",
+    FIREBASE_SIGNIN_URL: "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
+    WEB_API: "https://us-central1-xiclos-prod.cloudfunctions.net/api/api",
+    // Olvidé mi contraseña: se resuelve en la web
+    PASSWORD_HELP_HOST: "xiclos.com",
+
     // Player
     PROGRESS_SAVE_SECONDS: 15,
     PROGRESS_DONE_RATIO: 0.95,
@@ -107,7 +119,10 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
       updateHistory: api + "/updHistory",
       deleteHistory: api + "/deletedHistory",
       unsync: api + "/unsync",
-      logNotification: api + "/log-notification"
+      logNotification: api + "/log-notification",
+      // Rutas de la web que usa el ingreso con mail
+      webUser: XTV.config.WEB_API + "/admin/user/",
+      syncDevice: XTV.config.WEB_API + "/sync-device"
     };
   })(XTV.config.API);
 
