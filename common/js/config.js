@@ -65,7 +65,7 @@ if (window.XTV_BOOT && window.XTV_BOOT.legacy) {
     MAIL_LOGIN: true,
     // Clave pública de Firebase de la web (no es secreta: es la que va en la
     // URL de accounts:signInWithPassword que usa xiclos.com)
-    FIREBASE_API_KEY: "AIzaSyBj7FMZbQQMefO9vEAYN9lPkeFNzzQNdfA",
+    FIREBASE_API_KEY: "AIzaSyBj7FMZbQQMefO9vEAYN9IPkeFNzzQNdfA",
     FIREBASE_SIGNIN_URL: "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
     WEB_API: "https://us-central1-xiclos-prod.cloudfunctions.net/api/api",
     // Olvidé mi contraseña: se resuelve en la web
